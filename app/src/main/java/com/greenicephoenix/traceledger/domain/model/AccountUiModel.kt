@@ -1,21 +1,13 @@
 package com.greenicephoenix.traceledger.domain.model
 
-/**
- * UI representation of an account
- * (Later this will map to Room entities)
- */
+import java.math.BigDecimal
+
 data class AccountUiModel(
     val id: String,
     val name: String,
-    val balance: String,
+    val balance: BigDecimal,
     val type: AccountType,
     val includeInTotal: Boolean,
-
-    // Optional notes
     val details: String? = null,
-
-    // UI-only visual attributes
-    val color: Long, // stored as ARGB
+    val color: Long
 )
-
-

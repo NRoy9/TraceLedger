@@ -3,7 +3,6 @@ package com.greenicephoenix.traceledger.feature.dashboard
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -13,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.collectAsState
 import com.greenicephoenix.traceledger.core.navigation.Routes
 import com.greenicephoenix.traceledger.core.ui.theme.NothingRed
 import com.greenicephoenix.traceledger.domain.model.*
@@ -23,16 +23,28 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.VisibilityOff
-
-
+import androidx.compose.runtime.getValue
+import com.greenicephoenix.traceledger.core.currency.CurrencyManager
+import com.greenicephoenix.traceledger.core.currency.CurrencyFormatter
+import java.math.BigDecimal
 
 @Composable
 fun DashboardScreen(
     accounts: List<AccountUiModel>,
     onNavigate: (String) -> Unit,
-    onAddAccount: () -> Unit
+    onAddAccount: () -> Unit,
+    onAccountClick: (AccountUiModel) -> Unit
 ) {
     //val bankAccounts = accounts.filter { it.type == AccountType.BANK }
+    val currency by CurrencyManager.currency.collectAsState()
+
+    val totalBalanceAmount = accounts
+        .filter { it.includeInTotal }
+        .fold(BigDecimal.ZERO) { acc, account ->
+            acc + account.balance
+        }
+
+    val netBalanceAmount = 0.0 // placeholder until logic exists
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
@@ -78,7 +90,10 @@ fun DashboardScreen(
                         color = Color.Gray
                     )
                     Text(
-                        text = "₹52,500.00",
+                        text = CurrencyFormatter.format(
+                            amount = totalBalanceAmount.toPlainString(),
+                            currency = currency
+                        ),
                         style = MaterialTheme.typography.headlineMedium,
                         color = Color.White
                     )
@@ -95,7 +110,10 @@ fun DashboardScreen(
         }
 
         item(span = { GridItemSpan(2) }) {
-            MonthlyBudgetCard()
+            MonthlyBudgetCard(
+                used = 0.0,
+                limit = 0.0
+            )
         }
 
         // ================= NET BALANCE =================
@@ -116,7 +134,10 @@ fun DashboardScreen(
                         color = Color.Gray
                     )
                     Text(
-                        text = "+0.00",
+                        text = CurrencyFormatter.format(
+                            netBalanceAmount.toBigDecimal().toPlainString(),
+                            currency
+                        ),
                         style = MaterialTheme.typography.headlineMedium,
                         color = Color.White
                     )
@@ -149,12 +170,7 @@ fun DashboardScreen(
 
 // ---- prepare accounts for dashboard ----
         val dashboardAccounts = accounts
-            .sortedByDescending {
-                it.balance
-                    .replace("₹", "")
-                    .replace(",", "")
-                    .toDoubleOrNull() ?: 0.0
-            } // highest first
+            .sortedByDescending { it.balance }
             .take(5)
 
 // ---- grid ----
@@ -165,7 +181,10 @@ fun DashboardScreen(
 
 // ACCOUNT CARDS
         items(dashboardAccounts) { account ->
-            DashboardAccountCard(account)
+            DashboardAccountCard(
+                account = account,
+                onClick = { onAccountClick(account) }
+            )
         }
 
         item(span = { GridItemSpan(2) }) {
@@ -175,7 +194,12 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun MonthlyBudgetCard() {
+private fun MonthlyBudgetCard(
+    used: Double = 0.0,
+    limit: Double = 0.0
+) {
+    val currency by CurrencyManager.currency.collectAsState()
+
     Card(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
@@ -194,7 +218,13 @@ private fun MonthlyBudgetCard() {
             )
 
             Text(
-                text = "₹0.00 / ₹0.00",
+                text = "${CurrencyFormatter.format(
+                    used.toBigDecimal().toPlainString(),
+                    currency
+                )} / ${CurrencyFormatter.format(
+                    limit.toBigDecimal().toPlainString(),
+                    currency
+                )}",
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White
             )
@@ -215,7 +245,7 @@ private fun AddAccountCard(onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(100.dp)
+            .height(92.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
@@ -237,79 +267,76 @@ private fun AddAccountCard(onClick: () -> Unit) {
 }
 
 @Composable
-private fun DashboardAccountCard(account: AccountUiModel) {
-
+fun DashboardAccountCard(
+    account: AccountUiModel,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(100.dp), // ⬅ taller, BitLedger-like
-        shape = RoundedCornerShape(20.dp),
+            .height(92.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFF141414)
         )
     ) {
-        Row(
-            modifier = Modifier.fillMaxSize()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
 
-            // LEFT COLOR STRIP
-            Box(
-                modifier = Modifier
-                    .width(6.dp)
-                    .fillMaxHeight()
-                    .background(Color(account.color.takeIf { it != 0L } ?: NothingRed.value.toLong()))
-            )
-
-            Column(
-                modifier = Modifier
-                    .padding(12.dp)
-                    .fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceBetween
+            /* ---------- TOP ROW ---------- */
+            Row(
+                verticalAlignment = Alignment.CenterVertically
             ) {
 
-                // TOP ROW
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-
-                    Icon(
-                        imageVector = account.type.icon(),
-                        contentDescription = null,
-                        tint = Color(account.color),
-                        modifier = Modifier.size(18.dp)
-                    )
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Text(
-                        text = account.type.displayName,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.Gray
-                    )
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    IncludedBadge(isIncluded = account.includeInTotal)
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                // BALANCE
-                Text(
-                    text = account.balance,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White
+                Icon(
+                    imageVector = account.type.icon(),
+                    contentDescription = null,
+                    tint = Color(account.color),
+                    modifier = Modifier.size(20.dp)
                 )
 
-                // NAME
+                Spacer(modifier = Modifier.width(10.dp))
+
                 Text(
                     text = account.name,
+                    color = Color.White,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFFB0B0B0)
+                    modifier = Modifier.weight(1f)
                 )
+
+                IncludedBadge(isIncluded = account.includeInTotal)
             }
+
+            val currency by CurrencyManager.currency.collectAsState()
+
+            /* ---------- AMOUNT ---------- */
+            Text(
+                text = CurrencyFormatter.format(
+                    account.balance.toPlainString(),
+                    currency
+                ),
+                color = Color.White,
+                style = MaterialTheme.typography.bodyLarge
+            )
+
+            /* ---------- ACCENT LINE ---------- */
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .height(2.dp)
+                    .background(
+                        color = Color(account.color),
+                        shape = RoundedCornerShape(2.dp)
+                    )
+            )
         }
     }
 }
-
 
 @Composable
 private fun IncludedBadge(isIncluded: Boolean) {

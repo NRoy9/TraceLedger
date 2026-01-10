@@ -1,61 +1,55 @@
 package com.greenicephoenix.traceledger.feature.accounts
 
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import androidx.lifecycle.viewModelScope
+import com.greenicephoenix.traceledger.core.repository.AccountRepository
+import com.greenicephoenix.traceledger.core.repository.TransactionRepository
 import com.greenicephoenix.traceledger.domain.model.AccountUiModel
-import com.greenicephoenix.traceledger.domain.model.AccountType
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import com.greenicephoenix.traceledger.TraceLedgerApp
 
-class AccountsViewModel : ViewModel() {
 
-    // Internal mutable state
-    private val _accounts = MutableStateFlow(
-        listOf(
-            AccountUiModel(
-                id = "1",
-                name = "Main Bank",
-                balance = "₹84,500.00",
-                type = AccountType.BANK,
-                includeInTotal = true,
-                color = 0xFF4CAF50
-            ),
-            AccountUiModel(
-                id = "2",
-                name = "Cash Wallet",
-                balance = "₹2,000.00",
-                type = AccountType.CASH,
-                includeInTotal = true,
-                color = 0xFFFF5722
-            ),
-            AccountUiModel(
-                id = "3",
-                name = "ICICI",
-                balance = "₹50.00",
-                type = AccountType.BANK,
-                includeInTotal = true,
-                color = 0xFF03A9F4
+class AccountsViewModel(
+    application: Application
+) : AndroidViewModel(application) {
+
+    private val app =
+        getApplication<TraceLedgerApp>()
+
+    private val accountRepository =
+        app.container.accountRepository
+
+    private val transactionRepository =
+        app.container.transactionRepository
+
+    val accounts: StateFlow<List<AccountUiModel>> =
+        accountRepository.observeAccounts()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = emptyList()
             )
-        )
-    )
 
-    // Public immutable state
-    val accounts: StateFlow<List<AccountUiModel>> = _accounts.asStateFlow()
-
-    /**
-     * Adds a new account.
-     * (Later this will persist to Room)
-     */
     fun addAccount(account: AccountUiModel) {
-        _accounts.value = _accounts.value + account
+        viewModelScope.launch {
+            accountRepository.upsert(account)
+        }
     }
 
-    /**
-     * Updates an existing account.
-     */
-    fun updateAccount(updated: AccountUiModel) {
-        _accounts.value = _accounts.value.map {
-            if (it.id == updated.id) updated else it
+    fun updateAccount(account: AccountUiModel) {
+        viewModelScope.launch {
+            accountRepository.update(account)
+        }
+    }
+
+    fun deleteAccount(accountId: String) {
+        viewModelScope.launch {
+            accountRepository.delete(accountId)
         }
     }
 }

@@ -10,11 +10,7 @@ import androidx.compose.material.icons.filled.Payments
  * Used ONLY for sorting accounts on dashboard
  */
 val AccountUiModel.numericBalance: Double
-    get() = balance
-        .replace("₹", "")
-        .replace(",", "")
-        .toDoubleOrNull()
-        ?: 0.0
+    get() = balance.toDouble()
 
 /**
  * Icon based on account type

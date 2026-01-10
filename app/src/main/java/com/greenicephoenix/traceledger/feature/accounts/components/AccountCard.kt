@@ -17,12 +17,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.greenicephoenix.traceledger.domain.model.AccountUiModel
 import com.greenicephoenix.traceledger.feature.accounts.accountTypeIcon
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.greenicephoenix.traceledger.core.currency.CurrencyFormatter
+import com.greenicephoenix.traceledger.core.currency.CurrencyManager
+
 
 @Composable
 fun AccountCard(
     account: AccountUiModel,
     onClick: () -> Unit
 ) {
+    val currency by CurrencyManager.currency.collectAsState()
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -64,7 +71,10 @@ fun AccountCard(
                 horizontalAlignment = Alignment.End
             ) {
                 Text(
-                    text = account.balance,
+                    text = CurrencyFormatter.format(
+                        account.balance.toPlainString(),
+                        currency
+                    ),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Icon(

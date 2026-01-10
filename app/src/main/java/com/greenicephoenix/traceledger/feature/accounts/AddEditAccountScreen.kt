@@ -1,5 +1,6 @@
 package com.greenicephoenix.traceledger.feature.accounts
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,12 +23,13 @@ import androidx.compose.ui.unit.dp
 import com.greenicephoenix.traceledger.core.ui.theme.AccountColors
 import com.greenicephoenix.traceledger.core.ui.theme.NothingRed
 import com.greenicephoenix.traceledger.domain.model.AccountType
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.unit.sp
 import com.greenicephoenix.traceledger.domain.model.AccountUiModel
-
+import androidx.compose.ui.graphics.toArgb
+import java.math.BigDecimal
 
 /**
  * Add / Edit Account Screen
@@ -37,20 +39,53 @@ import com.greenicephoenix.traceledger.domain.model.AccountUiModel
  * - Credit card extra fields hidden behind expandable "Optional details"
  * - Credit card fields are informational only
  */
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditAccountScreen(
+    existingAccount: AccountUiModel? = null,
     onCancel: () -> Unit,
     onSave: (AccountUiModel) -> Unit
 ) {
     // ---------------- STATE ----------------
 
-    var accountType by remember { mutableStateOf(AccountType.BANK) }
-    var name by remember { mutableStateOf("") }
-    var balance by remember { mutableStateOf("") }
-    var details by remember { mutableStateOf("") }
-    var includeInTotal by remember { mutableStateOf(true) }
-    var selectedColor by remember { mutableStateOf(AccountColors.first()) }
+    val isEditMode = existingAccount != null
+
+    var accountType by remember {
+        mutableStateOf(existingAccount?.type ?: AccountType.BANK)
+    }
+    var name by remember {
+        mutableStateOf(existingAccount?.name ?: "")
+    }
+    var balance by remember {
+        mutableStateOf(
+            existingAccount?.balance
+                ?.toPlainString()
+                ?: ""
+        )
+    }
+    var details by remember {
+        mutableStateOf(existingAccount?.details ?: "")
+    }
+    var includeInTotal by remember {
+        mutableStateOf(existingAccount?.includeInTotal ?: true)
+    }
+    var selectedColor by remember(existingAccount?.id) {
+        mutableStateOf(
+            if (existingAccount != null) {
+                Color(existingAccount.color.toInt())
+            } else {
+                AccountColors.first()
+            }
+        )
+    }
+
+
+    val isValidAccount by remember {
+        derivedStateOf {
+            name.isNotBlank()
+        }
+    }
 
     // Credit card optional state
     var showCreditCardDetails by remember { mutableStateOf(false) }
@@ -74,15 +109,15 @@ fun AddEditAccountScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp)
+                    .height(44.dp)
                     .background(Color.Black)
-                    .padding(horizontal = 12.dp),
+                    .padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
                 IconButton(
                     onClick = onCancel,
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(32.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
@@ -92,7 +127,7 @@ fun AddEditAccountScreen(
                 }
 
                 Text(
-                    text = "Add Account",
+                    text = if (isEditMode) "Edit Account" else "Add Account",
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleMedium,
@@ -101,33 +136,33 @@ fun AddEditAccountScreen(
 
                 IconButton(
                     onClick = {
+                        if (!isValidAccount) return@IconButton
 
-                        // 1) Parse numeric balance safely
-                        val numericBalance = balance.toDoubleOrNull() ?: 0.0
+                        val numericBalance =
+                            balance.toBigDecimalOrNull() ?: BigDecimal.ZERO
 
-                        // 2) Format balance for display (₹)
-                        val formattedBalance = "₹%,.2f".format(numericBalance)
-
-                        // 3) Color is ALWAYS valid — AccountColors.first() is non-zero
-                        val resolvedColor: Long = selectedColor.value.toLong()
-
-                        // 4) Create account (MATCHES YOUR MODEL EXACTLY)
                         val account = AccountUiModel(
-                            id = System.currentTimeMillis().toString(),
+                            id = existingAccount?.id ?: System.currentTimeMillis().toString(),
                             name = name.trim(),
-                            balance = formattedBalance,
+                            balance = numericBalance,
                             type = accountType,
                             includeInTotal = includeInTotal,
-                            color = resolvedColor
+                            details = details.takeIf { it.isNotBlank() },
+                            color = selectedColor.toArgb().toLong()
+                        )
+                        Log.d(
+                            "ACCOUNT_COLOR",
+                            "Saving color = ${selectedColor.value.toString(16)}"
                         )
 
                         onSave(account)
-                    }
+                    },
+                    enabled = isValidAccount
                 ) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Save",
-                        tint = NothingRed
+                        tint = if (isValidAccount) NothingRed else Color.Gray
                     )
                 }
             }
@@ -140,185 +175,61 @@ fun AddEditAccountScreen(
             // =========================
             // FORM CONTENT
             // =========================
-            LazyColumn(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .background(Color.Black),
+                contentAlignment = Alignment.TopCenter
             ) {
-
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                // ---------------- ACCOUNT TYPE ----------------
-
-                item {
-                    Text("Account Type", style = MaterialTheme.typography.labelMedium)
-                }
-
-                item {
-                    AccountTypeSelector(
-                        selected = accountType,
-                        onSelected = { accountType = it }
-                    )
-                }
-
-                // ---------------- BASIC FIELDS ----------------
-
-                item {
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text("Account Name") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                item {
-                    OutlinedTextField(
-                        value = balance,
-                        onValueChange = { balance = it },
-                        label = { Text("Opening Balance") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                // ---------------- INCLUDE IN TOTAL ----------------
-
-                item {
-                    Row(
+                Card(
+                    modifier = Modifier
+                        .padding(top = 24.dp)
+                        .padding(horizontal = 16.dp)
+                        //.heightIn(max = 720.dp)
+                        .fillMaxHeight()
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFF0F0F0F)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                ) {
+                    LazyColumn(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        contentPadding = PaddingValues(5.dp),
+                        verticalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
-                        Text("Include in total balance")
-                        Switch(
-                            checked = includeInTotal,
-                            onCheckedChange = { includeInTotal = it }
-                        )
-                    }
-                }
-
-                // ---------------- DETAILS ----------------
-
-                item {
-                    OutlinedTextField(
-                        value = details,
-                        onValueChange = { details = it },
-                        label = { Text("Details (optional)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        maxLines = 3
-                    )
-                }
-
-                // ---------------- COLOR PICKER ----------------
-
-                item {
-                    Text("Account Color", style = MaterialTheme.typography.labelMedium)
-                }
-
-                item {
-                    FlowRow(
-                        maxItemsInEachRow = 6,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        AccountColors.forEach { color ->
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(color)
-                                    .border(
-                                        width = if (color == selectedColor) 3.dp else 1.dp,
-                                        color = if (color == selectedColor)
-                                            NothingRed
-                                        else
-                                            Color.Transparent,
-                                        shape = CircleShape
-                                    )
-                                    .clickable { selectedColor = color }
-                            )
-                        }
-                    }
-                }
-
-                // ---------------- CREDIT CARD OPTIONAL SECTION ----------------
-
-                if (accountType == AccountType.CREDIT_CARD) {
-
-                    item {
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-
-                    item {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
+                        item {
+                            AddAccountFormContent(
+                                name = name,
+                                onNameChange = { name = it },
+                                accountType = accountType,
+                                onAccountTypeChange = { accountType = it },
+                                balance = balance,
+                                onBalanceChange = { balance = it },
+                                selectedColor = selectedColor,
+                                onColorSelect = { selectedColor = it },
+                                includeInTotal = includeInTotal,
+                                onIncludeInTotalChange = { includeInTotal = it },
+                                details = details,
+                                onDetailsChange = { details = it },
+                                showCreditCardDetails = showCreditCardDetails,
+                                onToggleCreditCardDetails = {
                                     showCreditCardDetails = !showCreditCardDetails
                                 },
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text(
-                                    text = "Optional details",
-                                    style = MaterialTheme.typography.labelMedium
-                                )
-                                Text(
-                                    text = "Informational only",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-
-                            Icon(
-                                imageVector =
-                                    if (showCreditCardDetails)
-                                        Icons.Default.ExpandLess
-                                    else
-                                        Icons.Default.ExpandMore,
-                                contentDescription = null
-                            )
-                        }
-                    }
-
-                    if (showCreditCardDetails) {
-
-                        item {
-                            OutlinedTextField(
-                                value = creditLimit,
-                                onValueChange = { creditLimit = it },
-                                label = { Text("Total credit limit (optional)") },
-                                modifier = Modifier.fillMaxWidth()
+                                creditLimit = creditLimit,
+                                onCreditLimitChange = { creditLimit = it },
+                                billingDay = billingDay,
+                                onBillingDayChange = { billingDay = it },
+                                dueDay = dueDay,
+                                onDueDayChange = { dueDay = it }
                             )
                         }
 
                         item {
-                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                OutlinedTextField(
-                                    value = billingDay,
-                                    onValueChange = { billingDay = it },
-                                    label = { Text("Billing day (optional)") },
-                                    modifier = Modifier.weight(1f)
-                                )
-
-                                OutlinedTextField(
-                                    value = dueDay,
-                                    onValueChange = { dueDay = it },
-                                    label = { Text("Due day (optional)") },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
+                            Spacer(modifier = Modifier.height(24.dp))
                         }
                     }
-                }
-
-                // Bottom spacer to avoid nav overlap
-                item {
-                    Spacer(modifier = Modifier.height(80.dp))
                 }
             }
         }
@@ -337,27 +248,301 @@ private fun AccountTypeSelector(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(48.dp)
             .clip(RoundedCornerShape(24.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+            .background(Color(0xFF3A3A40))
+            .padding(4.dp)
     ) {
         AccountType.entries.forEach { type ->
             val isSelected = type == selected
 
-            Text(
-                text = type.name.replace("_", " "),
+            Box(
                 modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
                     .clip(RoundedCornerShape(20.dp))
                     .background(
-                        if (isSelected) NothingRed.copy(alpha = 0.15f)
+                        if (isSelected) NothingRed.copy(alpha = 0.25f)
                         else Color.Transparent
                     )
-                    .clickable { onSelected(type) }
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                color = if (isSelected) NothingRed
-                else MaterialTheme.colorScheme.onSurface
+                    .clickable { onSelected(type) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = type.name.replace("_", " "),
+                    color = if (isSelected) NothingRed else Color.White,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    softWrap = false
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AddAccountFormContent(
+    name: String,
+    onNameChange: (String) -> Unit,
+    accountType: AccountType,
+    onAccountTypeChange: (AccountType) -> Unit,
+    balance: String,
+    onBalanceChange: (String) -> Unit,
+    selectedColor: Color?,
+    onColorSelect: (Color) -> Unit,
+    includeInTotal: Boolean,
+    onIncludeInTotalChange: (Boolean) -> Unit,
+    details: String,
+    onDetailsChange: (String) -> Unit,
+    showCreditCardDetails: Boolean,
+    onToggleCreditCardDetails: () -> Unit,
+    creditLimit: String,
+    onCreditLimitChange: (String) -> Unit,
+    billingDay: String,
+    onBillingDayChange: (String) -> Unit,
+    dueDay: String,
+    onDueDayChange: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier.padding(15.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+
+        AccountLabelField(
+            name = name,
+            onNameChange = onNameChange,
+            label = "Account Name"
+        )
+
+        AccountTypeSelector(
+            selected = accountType,
+            onSelected = onAccountTypeChange
+        )
+
+        BalanceField(balance, onBalanceChange)
+
+        NotesField(details, onDetailsChange)
+
+        IncludeInTotalRow(includeInTotal, onIncludeInTotalChange)
+
+        SectionLabel("ACCENT COLOR")
+        ColorProtocolPicker(selectedColor, onColorSelect)
+
+        if (accountType == AccountType.CREDIT_CARD) {
+            CreditCardSection(
+                expanded = showCreditCardDetails,
+                onToggle = onToggleCreditCardDetails,
+                creditLimit = creditLimit,
+                onCreditLimitChange = onCreditLimitChange,
+                billingDay = billingDay,
+                onBillingDayChange = onBillingDayChange,
+                dueDay = dueDay,
+                onDueDayChange = onDueDayChange
             )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun AccountLabelField(
+    name: String,
+    onNameChange: (String) -> Unit,
+    label: String
+) {
+    OutlinedTextField(
+        value = name,
+        onValueChange = onNameChange,
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text(label) },
+        singleLine = true
+    )
+}
+
+@Composable
+private fun TypeAndBalanceRow(
+    accountType: AccountType,
+    onAccountTypeChange: (AccountType) -> Unit,
+    balance: String,
+    onBalanceChange: (String) -> Unit
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+
+        Box(modifier = Modifier.weight(1f)) {
+            AccountTypeSegmentedSelector(
+                selected = accountType,
+                onSelected = onAccountTypeChange
+            )
+        }
+
+        OutlinedTextField(
+            value = balance,
+            onValueChange = onBalanceChange,
+            label = { Text("BALANCE") },
+            modifier = Modifier.weight(1f),
+            singleLine = true
+        )
+    }
+}
+
+
+@Composable
+private fun ColorProtocolPicker(
+    selectedColor: Color?,
+    onColorSelect: (Color) -> Unit
+) {
+    val colors = AccountColors.take(18) // exactly 16 colors
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+
+        colors.chunked(9).forEach { rowColors ->
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                rowColors.forEach { color ->
+                    val selected = selectedColor == color
+
+                    Box(
+                        modifier = Modifier
+                            .size(30.dp)
+                            .clip(CircleShape)
+                            .background(color)
+                            .border(
+                                width = if (selected) 3.dp else 1.dp,
+                                color = if (selected) Color.White else Color.Transparent,
+                                shape = CircleShape
+                            )
+                            .clickable { onColorSelect(color) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun IncludeInTotalRow(
+    includeInTotal: Boolean,
+    onIncludeInTotalChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFF141414), RoundedCornerShape(16.dp))
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Include in totals",
+            color = Color.White,
+            style = MaterialTheme.typography.bodyMedium
+        )
+
+        Switch(
+            checked = includeInTotal,
+            onCheckedChange = onIncludeInTotalChange
+        )
+    }
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
+        color = Color.Gray,
+        letterSpacing = 1.2.sp
+    )
+}
+
+@Composable
+private fun BalanceField(
+    balance: String,
+    onBalanceChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = balance,
+        onValueChange = onBalanceChange,
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text("BALANCE") },
+        singleLine = true
+    )
+}
+
+@Composable
+private fun NotesField(
+    details: String,
+    onDetailsChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = details,
+        onValueChange = onDetailsChange,
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text("Notes") },
+        singleLine = true
+    )
+}
+
+@Composable
+private fun CreditCardSection(
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    creditLimit: String,
+    onCreditLimitChange: (String) -> Unit,
+    billingDay: String,
+    onBillingDayChange: (String) -> Unit,
+    dueDay: String,
+    onDueDayChange: (String) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onToggle() },
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "OPTIONAL CREDIT CARD DETAILS",
+                color = Color.White,
+                style = MaterialTheme.typography.labelMedium
+            )
+
+            Icon(
+                imageVector =
+                    if (expanded) Icons.Default.ExpandLess
+                    else Icons.Default.ExpandMore,
+                contentDescription = null
+            )
+        }
+
+        if (expanded) {
+            OutlinedTextField(
+                value = creditLimit,
+                onValueChange = onCreditLimitChange,
+                label = { Text("Credit Limit") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = billingDay,
+                    onValueChange = onBillingDayChange,
+                    label = { Text("Billing Day") },
+                    modifier = Modifier.weight(1f)
+                )
+
+                OutlinedTextField(
+                    value = dueDay,
+                    onValueChange = onDueDayChange,
+                    label = { Text("Due Day") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
 }

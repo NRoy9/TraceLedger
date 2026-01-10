@@ -73,4 +73,7 @@ dependencies {
     ksp(libs.room.compiler)
     implementation(libs.material.icons)
 
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+
 }
