@@ -9,6 +9,10 @@ object Routes {
     const val ADD_TRANSACTION = "add_transaction"
     const val EDIT_TRANSACTION = "edit_transaction/{transactionId}"
     const val STATISTICS = "statistics"
+    // ── Statistics children ──
+    const val STATISTICS_BREAKDOWN = "statistics/breakdown"
+    const val STATISTICS_TRENDS = "statistics/trends"
+    const val STATISTICS_CASHFLOW = "statistics/cashflow"
     const val SETTINGS = "settings"
     const val CATEGORIES = "categories"
     const val ADD_CATEGORY = "add_category"

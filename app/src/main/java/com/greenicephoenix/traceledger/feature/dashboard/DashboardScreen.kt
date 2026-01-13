@@ -31,6 +31,7 @@ import java.math.BigDecimal
 @Composable
 fun DashboardScreen(
     accounts: List<AccountUiModel>,
+    statisticsViewModel: com.greenicephoenix.traceledger.feature.statistics.StatisticsViewModel,
     onNavigate: (String) -> Unit,
     onAddAccount: () -> Unit,
     onAccountClick: (AccountUiModel) -> Unit
@@ -38,13 +39,15 @@ fun DashboardScreen(
     //val bankAccounts = accounts.filter { it.type == AccountType.BANK }
     val currency by CurrencyManager.currency.collectAsState()
 
+    val monthlyIncome by statisticsViewModel.totalIncome.collectAsState()
+    val monthlyExpense by statisticsViewModel.totalExpense.collectAsState()
+    val monthlyNet by statisticsViewModel.netAmount.collectAsState()
+
     val totalBalanceAmount = accounts
         .filter { it.includeInTotal }
         .fold(BigDecimal.ZERO) { acc, account ->
             acc + account.balance
         }
-
-    val netBalanceAmount = 0.0 // placeholder until logic exists
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
@@ -102,18 +105,24 @@ fun DashboardScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("IN  +0.00", color = Color(0xFF4CAF50))
-                        Text("OUT  -0.00", color = NothingRed)
+                        Text(
+                            text = "IN  " + CurrencyFormatter.format(
+                                monthlyIncome.toPlainString(),
+                                currency
+                            ),
+                            color = Color(0xFF4CAF50)
+                        )
+
+                        Text(
+                            text = "OUT  " + CurrencyFormatter.format(
+                                monthlyExpense.toPlainString(),
+                                currency
+                            ),
+                            color = NothingRed
+                        )
                     }
                 }
             }
-        }
-
-        item(span = { GridItemSpan(2) }) {
-            MonthlyBudgetCard(
-                used = 0.0,
-                limit = 0.0
-            )
         }
 
         // ================= NET BALANCE =================
@@ -135,14 +144,25 @@ fun DashboardScreen(
                     )
                     Text(
                         text = CurrencyFormatter.format(
-                            netBalanceAmount.toBigDecimal().toPlainString(),
+                            monthlyNet.toPlainString(),
                             currency
                         ),
                         style = MaterialTheme.typography.headlineMedium,
-                        color = Color.White
+                        color = if (monthlyNet >= BigDecimal.ZERO)
+                            Color(0xFF4CAF50)   // green
+                        else
+                            NothingRed         // red
                     )
                 }
             }
+        }
+
+        // ================= MONTHLY BUDGET =================
+        item(span = { GridItemSpan(2) }) {
+            MonthlyBudgetCard(
+                used = 0.0,
+                limit = 0.0
+            )
         }
 
         // ================= MY ACCOUNTS =================

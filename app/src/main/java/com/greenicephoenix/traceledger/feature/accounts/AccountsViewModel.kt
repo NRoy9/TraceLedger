@@ -43,7 +43,7 @@ class AccountsViewModel(
 
     fun updateAccount(account: AccountUiModel) {
         viewModelScope.launch {
-            accountRepository.update(account)
+            accountRepository.upsert(account)
         }
     }
 

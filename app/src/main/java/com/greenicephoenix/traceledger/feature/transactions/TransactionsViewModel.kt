@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.greenicephoenix.traceledger.domain.model.TransactionType
 import com.greenicephoenix.traceledger.domain.model.TransactionUiModel
 import com.greenicephoenix.traceledger.core.repository.TransactionRepository
+import com.greenicephoenix.traceledger.domain.model.AccountUiModel
+import com.greenicephoenix.traceledger.domain.model.CategoryUiModel
 import kotlinx.coroutines.flow.*
 import java.time.YearMonth
 import java.math.BigDecimal
@@ -31,18 +33,68 @@ class TransactionsViewModel(
     val typeFilter: StateFlow<TransactionType?> =
         _typeFilter.asStateFlow()
 
-    val monthlyTransactions: StateFlow<List<TransactionUiModel>> =
+    private val accountNameMap =
+        MutableStateFlow<Map<String, String>>(emptyMap())
+
+    private val categoryNameMap =
+        MutableStateFlow<Map<String, String>>(emptyMap())
+
+    private val referenceData: StateFlow<Pair<Map<String, String>, Map<String, String>>> =
+        combine(
+            accountNameMap,
+            categoryNameMap
+        ) { accounts, categories ->
+            accounts to categories
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            emptyMap<String, String>() to emptyMap()
+        )
+
+    val visibleTransactions: StateFlow<List<TransactionUiModel>> =
         combine(
             transactionRepository.observeTransactions(),
             _selectedMonth,
-            _typeFilter
-        ) { transactions, month, typeFilter ->
+            _typeFilter,
+            _searchQuery,
+            referenceData
+        ) { transactions, month, typeFilter, query, ref ->
+
+            val (accounts, categories) = ref
+            val q = query.trim().lowercase()
 
             transactions
                 .asSequence()
                 .filter { YearMonth.from(it.date) == month }
+                .filter { typeFilter == null || it.type == typeFilter }
                 .filter { tx ->
-                    typeFilter == null || tx.type == typeFilter
+                    if (q.isBlank()) return@filter true
+
+                    val accountMatch =
+                        tx.fromAccountId?.let { accounts[it] }?.contains(q) == true ||
+                                tx.toAccountId?.let { accounts[it] }?.contains(q) == true
+
+                    val categoryMatch =
+                        tx.categoryId?.let { categories[it] }?.contains(q) == true
+
+                    val amountMatch =
+                        tx.amount.toPlainString().contains(q)
+
+                    val notesMatch =
+                        tx.note?.lowercase()?.contains(q) == true
+
+                    val dateMatch =
+                        tx.date.toString().contains(q)
+
+                    val typeMatch =
+                        tx.type.name.lowercase().contains(q)
+
+                    accountMatch ||
+                            categoryMatch ||
+                            amountMatch ||
+                            notesMatch ||
+                            dateMatch ||
+                            typeMatch
                 }
                 .sortedByDescending { it.date }
                 .toList()
@@ -53,8 +105,9 @@ class TransactionsViewModel(
             emptyList()
         )
 
+
     val totalIn: StateFlow<BigDecimal> =
-        monthlyTransactions.map { list ->
+        visibleTransactions.map { list ->
             list
                 .filter { it.type == TransactionType.INCOME }
                 .fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }
@@ -65,7 +118,7 @@ class TransactionsViewModel(
         )
 
     val totalOut: StateFlow<BigDecimal> =
-        monthlyTransactions.map { list ->
+        visibleTransactions.map { list ->
             list
                 .filter { it.type == TransactionType.EXPENSE }
                 .fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }
@@ -95,5 +148,14 @@ class TransactionsViewModel(
         _typeFilter.value = type
     }
 
+    fun setAccounts(accounts: List<AccountUiModel>) {
+        accountNameMap.value =
+            accounts.associate { it.id to it.name.lowercase() }
+    }
+
+    fun setCategories(categories: List<CategoryUiModel>) {
+        categoryNameMap.value =
+            categories.associate { it.id to it.name.lowercase() }
+    }
 
 }

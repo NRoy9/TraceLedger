@@ -42,5 +42,6 @@ abstract class TraceLedgerDatabase : RoomDatabase() {
                     .also { INSTANCE = it }
             }
         }
+
     }
 }

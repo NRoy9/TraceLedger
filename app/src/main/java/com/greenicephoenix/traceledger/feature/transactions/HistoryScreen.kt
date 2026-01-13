@@ -39,46 +39,16 @@ fun HistoryScreen(
     }
     val currency by CurrencyManager.currency.collectAsState()
     val month by viewModel.selectedMonth.collectAsState()
-    val transactions by viewModel.monthlyTransactions.collectAsState()
+    val transactions by viewModel.visibleTransactions.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
-    val filteredTransactions = remember(
-        transactions,
-        categories,
-        accounts,
-        searchQuery
-    ) {
-        val query = searchQuery.lowercase()
-
-        if (query.isBlank()) {
-            transactions
-        } else {
-            transactions.filter { tx ->
-
-                val categoryName =
-                    categories.firstOrNull { it.id == tx.categoryId }?.name ?: ""
-
-                val accountName =
-                    when (tx.type) {
-                        TransactionType.EXPENSE,
-                        TransactionType.TRANSFER ->
-                            accounts.firstOrNull { it.id == tx.fromAccountId }?.name
-
-                        TransactionType.INCOME ->
-                            accounts.firstOrNull { it.id == tx.toAccountId }?.name
-                    } ?: ""
-
-                categoryName.lowercase().contains(query) ||
-                        accountName.lowercase().contains(query) ||
-                        tx.note?.lowercase()?.contains(query) == true ||
-                        tx.amount.toPlainString().contains(query)
-            }
-        }
-    }
 
     val totalIn by viewModel.totalIn.collectAsState()
     val totalOut by viewModel.totalOut.collectAsState()
 
     val typeFilter by viewModel.typeFilter.collectAsState()
+
+    LaunchedEffect(accounts) { viewModel.setAccounts(accounts) }
+    LaunchedEffect(categories) { viewModel.setCategories(categories) }
 
     Column(
         modifier = Modifier
@@ -89,7 +59,7 @@ fun HistoryScreen(
 
         Text(
             text = "TRANSACTIONS",
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.headlineMedium,
             color = Color.White,
             modifier = Modifier
                 .clickable { onBack() }
@@ -137,6 +107,12 @@ fun HistoryScreen(
 
         Spacer(Modifier.height(12.dp))
 
+        com.greenicephoenix.traceledger.core.ui.components.MonthSelector(
+            month = month,
+            onPrevious = { viewModel.goToPreviousMonth() },
+            onNext = { viewModel.goToNextMonth() }
+        )
+        /*
         MonthHeader(
             month = month,
             totalIn = CurrencyFormatter.format(totalIn.toPlainString(), currency),
@@ -144,14 +120,15 @@ fun HistoryScreen(
             onPrevious = { viewModel.goToPreviousMonth() },
             onNext = { viewModel.goToNextMonth() }
         )
+        */
 
         Spacer(Modifier.height(12.dp))
 
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(filteredTransactions.size) { index ->
-                val tx = filteredTransactions[index]
+            items(transactions.size) { index ->
+                val tx = transactions[index]
 
                 val category = categories.firstOrNull { it.id == tx.categoryId }
                 val account = when (tx.type) {

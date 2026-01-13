@@ -4,6 +4,7 @@ import android.content.Context
 import com.greenicephoenix.traceledger.core.database.TraceLedgerDatabase
 import com.greenicephoenix.traceledger.core.repository.AccountRepository
 import com.greenicephoenix.traceledger.core.repository.TransactionRepository
+import com.greenicephoenix.traceledger.feature.statistics.StatisticsViewModelFactory
 
 class AppContainer(context: Context) {
 
@@ -13,5 +14,13 @@ class AppContainer(context: Context) {
         AccountRepository(database.accountDao())
 
     val transactionRepository: TransactionRepository =
-        TransactionRepository(database.transactionDao())
+        TransactionRepository(
+            database = database,
+            transactionDao = database.transactionDao(),
+            accountDao = database.accountDao()
+        )
+
+    val statisticsViewModelFactory =
+        StatisticsViewModelFactory(transactionRepository)
+
 }

@@ -32,7 +32,7 @@ fun SettingsScreen(
 
         Text(
             text = "SETTINGS",
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.headlineMedium,
             color = Color.White
         )
 

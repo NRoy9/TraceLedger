@@ -110,12 +110,13 @@ class AddTransactionViewModel(
         viewModelScope.launch {
             if (editingTransactionId == null) {
                 // ADD
-                transactionRepository.insert(transaction)
+                transactionRepository.insertTransactionWithBalance(transaction)
             } else {
                 // UPDATE
-                transactionRepository.update(
-                    transaction.copy(id = editingTransactionId!!)
-                )
+                val transactionId = editingTransactionId!!
+
+                val updatedTx = transaction.copy(id = transactionId)
+                transactionRepository.updateTransactionWithBalance(updatedTx)
             }
 
             update {
@@ -180,11 +181,10 @@ class AddTransactionViewModel(
         val transactionId = editingTransactionId ?: return
 
         viewModelScope.launch {
-            transactionRepository.delete(transactionId)
-
+            transactionRepository.deleteTransactionWithBalance(transactionId)
             update {
                 it.copy(
-                    saveCompleted = true,   // reuse existing exit signal
+                    saveCompleted = true,
                     validationError = null
                 )
             }
@@ -251,8 +251,6 @@ class AddTransactionViewModel(
 
     private var editingTransactionId: String? = null
     private var hasLoadedEditData = false
-
-    private var isInitialized = false
 
     fun initEdit(transactionId: String) {
         if (hasLoadedEditData) return

@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.greenicephoenix.traceledger.core.database.entity.AccountEntity
 import kotlinx.coroutines.flow.Flow
+import java.math.BigDecimal
 
 @Dao
 interface AccountDao {
@@ -28,4 +29,25 @@ interface AccountDao {
 
     @Query("DELETE FROM accounts")
     suspend fun deleteAllAccounts()
+
+    /**
+     * Adjust account balance by a delta amount.
+     *
+     * Positive delta  -> increases balance
+     * Negative delta  -> decreases balance
+     *
+     * This is an atomic SQL operation.
+     */
+    @Query(
+        """
+        UPDATE accounts
+        SET balance = balance + :delta
+        WHERE id = :accountId
+        """
+    )
+    suspend fun updateBalanceByDelta(
+        accountId: String,
+        delta: BigDecimal
+    )
+
 }

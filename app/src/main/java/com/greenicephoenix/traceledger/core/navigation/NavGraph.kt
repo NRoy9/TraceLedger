@@ -28,6 +28,7 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.greenicephoenix.traceledger.TraceLedgerApp
 import com.greenicephoenix.traceledger.feature.addtransaction.AddTransactionViewModelFactory
+import com.greenicephoenix.traceledger.feature.statistics.StatisticsViewModel
 import com.greenicephoenix.traceledger.feature.transactions.TransactionsViewModel
 import com.greenicephoenix.traceledger.feature.transactions.TransactionsViewModelFactory
 
@@ -52,11 +53,20 @@ fun TraceLedgerNavGraph(
         /* ---------------- DASHBOARD ---------------- */
         composable(Routes.DASHBOARD) {
 
+            val context = LocalContext.current
+            val app = context.applicationContext as TraceLedgerApp
+
+            val statisticsViewModel =
+                viewModel<com.greenicephoenix.traceledger.feature.statistics.StatisticsViewModel>(
+                    factory = app.container.statisticsViewModelFactory
+                )
+
             val accountsViewModel: AccountsViewModel = viewModel()
             val accounts by accountsViewModel.accounts.collectAsState()
 
             DashboardScreen(
                 accounts = accounts,
+                statisticsViewModel = statisticsViewModel,
                 onNavigate = { route -> navController.navigate(route) },
                 onAddAccount = { navController.navigate(Routes.ADD_ACCOUNT) },
                 onAccountClick = { account ->
@@ -271,6 +281,7 @@ fun TraceLedgerNavGraph(
         composable(Routes.STATISTICS) {
             StatisticsScreen()
         }
+
 
         /* ---------------- SETTINGS ---------------- */
         composable(Routes.SETTINGS) {

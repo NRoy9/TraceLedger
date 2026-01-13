@@ -24,10 +24,6 @@ class AccountRepository(
         accountDao.upsertAccount(account.toEntity())
     }
 
-    /** Update account */
-    suspend fun update(account: AccountUiModel) {
-        accountDao.updateAccount(account.toEntity())
-    }
 
     /** Delete account */
     suspend fun delete(accountId: String) {

@@ -51,26 +51,29 @@ fun AddEditAccountScreen(
 
     val isEditMode = existingAccount != null
 
-    var accountType by remember {
+    val editKey = existingAccount?.id
+
+    var accountType by remember(editKey) {
         mutableStateOf(existingAccount?.type ?: AccountType.BANK)
     }
-    var name by remember {
+
+    var name by remember(editKey) {
         mutableStateOf(existingAccount?.name ?: "")
     }
-    var balance by remember {
-        mutableStateOf(
-            existingAccount?.balance
-                ?.toPlainString()
-                ?: ""
-        )
+
+    var balance by remember(editKey) {
+        mutableStateOf(existingAccount?.balance?.toPlainString() ?: "")
     }
-    var details by remember {
+
+    var details by remember(editKey) {
         mutableStateOf(existingAccount?.details ?: "")
     }
-    var includeInTotal by remember {
+
+    var includeInTotal by remember(editKey) {
         mutableStateOf(existingAccount?.includeInTotal ?: true)
     }
-    var selectedColor by remember(existingAccount?.id) {
+
+    var selectedColor by remember(editKey) {
         mutableStateOf(
             if (existingAccount != null) {
                 Color(existingAccount.color.toInt())
@@ -81,11 +84,7 @@ fun AddEditAccountScreen(
     }
 
 
-    val isValidAccount by remember {
-        derivedStateOf {
-            name.isNotBlank()
-        }
-    }
+    val isValidAccount = name.isNotBlank()
 
     // Credit card optional state
     var showCreditCardDetails by remember { mutableStateOf(false) }
