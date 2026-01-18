@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -19,10 +20,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
-import com.greenicephoenix.traceledger.core.ui.theme.AccountColors
 import com.greenicephoenix.traceledger.core.ui.theme.NothingRed
 import com.greenicephoenix.traceledger.domain.model.CategoryType
 import com.greenicephoenix.traceledger.domain.model.CategoryUiModel
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,7 +72,7 @@ fun AddEditCategoryScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black)
-                .padding(padding)
+                //.padding(padding)
         ) {
 
             // ================= HEADER =================
@@ -156,45 +160,59 @@ fun AddEditCategoryScreen(
                                 shape = RoundedCornerShape(28.dp)
                             )
                     ) {
-                        Column(
+                        LazyColumn(
                             modifier = Modifier
                                 .padding(horizontal = 16.dp, vertical = 20.dp),
                             verticalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
 
-                            // NAME
-                            OutlinedTextField(
-                                value = name,
-                                onValueChange = { name = it },
-                                label = { Text("Category Name") },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true
-                            )
+                            item {
+                                OutlinedTextField(
+                                    value = name,
+                                    onValueChange = { name = it },
+                                    label = { Text("Category Name") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true
+                                )
+                            }
 
-                            // TYPE
-                            CategoryTypeSelector(
-                                selected = type,
-                                enabled = !isEditMode,
-                                onSelected = { type = it }
-                            )
+                            item {
+                                CategoryTypeSelector(
+                                    selected = type,
+                                    enabled = !isEditMode,
+                                    onSelected = { type = it }
+                                )
+                            }
 
-                            // ICON
-                            SectionLabel("ICON")
-                            IconPicker(
-                                selectedIcon = selectedIcon,
-                                onIconSelect = { selectedIcon = it }
-                            )
+                            item {
+                                SectionLabel("ICON")
+                            }
 
-                            // COLOR
-                            SectionLabel("COLOR")
-                            ColorPicker(
-                                colors = if (type == CategoryType.EXPENSE)
-                                    CategoryColors.expenseColors
-                                else
-                                    CategoryColors.incomeColors,
-                                selectedColor = selectedColor,
-                                onColorSelect = { selectedColor = it }
-                            )
+                            item {
+                                IconPicker(
+                                    selectedIcon = selectedIcon,
+                                    onIconSelect = { selectedIcon = it }
+                                )
+                            }
+
+                            item {
+                                SectionLabel("COLOR")
+                            }
+
+                            item {
+                                ColorPicker(
+                                    colors = if (type == CategoryType.EXPENSE)
+                                        CategoryColors.expenseColors
+                                    else
+                                        CategoryColors.incomeColors,
+                                    selectedColor = selectedColor,
+                                    onColorSelect = { selectedColor = it }
+                                )
+                            }
+
+                            item {
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
                         }
                     }
                 }
@@ -245,44 +263,47 @@ private fun IconPicker(
     selectedIcon: String,
     onIconSelect: (String) -> Unit
 ) {
-    val icons = CategoryIcons.ids.chunked(7)
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 44.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 220.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        contentPadding = PaddingValues(vertical = 4.dp)
+    ) {
+        items(CategoryIcons.ids) { iconId ->
+            val selected = iconId == selectedIcon
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        icons.forEach { row ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            Box(
+                modifier = Modifier
+                    .size(44.dp) // ✅ square touch target
+                    .clickable { onIconSelect(iconId) },
+                contentAlignment = Alignment.Center
             ) {
-                row.forEach { iconId ->
-                    val selected = iconId == selectedIcon
-
-                    Box(
-                        modifier = Modifier
-                            //.padding(end = 12.dp) // ✅ spacing moved here
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (selected)
-                                    NothingRed.copy(alpha = 0.25f)
-                                else
-                                    Color(0xFF2A2A2A)
-                            )
-                            .clickable { onIconSelect(iconId) },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = CategoryIcons.all[iconId]!!,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+                Box(
+                    modifier = Modifier
+                        .size(36.dp) // ✅ visual circle
+                        .clip(CircleShape)
+                        .background(
+                            if (selected)
+                                NothingRed.copy(alpha = 0.25f)
+                            else
+                                Color(0xFF2A2A2A)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = CategoryIcons.all[iconId]!!,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }
     }
 }
-
 
 @Composable
 private fun ColorPicker(
@@ -290,17 +311,27 @@ private fun ColorPicker(
     selectedColor: Color,
     onColorSelect: (Color) -> Unit
 ) {
-    colors.chunked(8).forEach { row ->
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            row.forEach { color ->
-                val selected = color == selectedColor
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 36.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 220.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        contentPadding = PaddingValues(vertical = 4.dp)
+    ) {
+        items(colors) { color ->
+            val selected = color == selectedColor
 
+            Box(
+                modifier = Modifier
+                    .size(44.dp)                 // ✅ square grid cell / touch target
+                    .clickable { onColorSelect(color) },
+                contentAlignment = Alignment.Center
+            ) {
                 Box(
                     modifier = Modifier
-                        .size(30.dp)
+                        .size(30.dp)             // ✅ visual circle (fixed)
                         .clip(CircleShape)
                         .background(color)
                         .border(
@@ -308,11 +339,9 @@ private fun ColorPicker(
                             color = if (selected) Color.White else Color.Transparent,
                             shape = CircleShape
                         )
-                        .clickable { onColorSelect(color) }
                 )
             }
         }
-        //Spacer(modifier = Modifier.height(6.dp))
     }
 }
 

@@ -33,7 +33,8 @@ fun BalanceCard(
 
             Text(
                 text = totalBalance,
-                style = MaterialTheme.typography.headlineLarge
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }

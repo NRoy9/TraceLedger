@@ -10,13 +10,17 @@ import com.greenicephoenix.traceledger.core.database.dao.AccountDao
 import com.greenicephoenix.traceledger.core.database.dao.TransactionDao
 import com.greenicephoenix.traceledger.core.database.entity.AccountEntity
 import com.greenicephoenix.traceledger.core.database.entity.TransactionEntity
+import com.greenicephoenix.traceledger.feature.budgets.data.BudgetDao
+import com.greenicephoenix.traceledger.feature.budgets.data.BudgetEntity
+
 
 @Database(
     entities = [
         AccountEntity::class,
-        TransactionEntity::class
+        TransactionEntity::class,
+        BudgetEntity::class
     ],
-    version = 1,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(RoomConverters::class)
@@ -24,6 +28,8 @@ abstract class TraceLedgerDatabase : RoomDatabase() {
 
     abstract fun accountDao(): AccountDao
     abstract fun transactionDao(): TransactionDao
+
+    abstract fun budgetDao(): BudgetDao
 
     companion object {
 

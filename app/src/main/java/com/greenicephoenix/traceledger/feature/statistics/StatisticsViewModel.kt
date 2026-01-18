@@ -7,13 +7,54 @@ import com.greenicephoenix.traceledger.domain.model.TransactionType
 import kotlinx.coroutines.flow.*
 import java.math.BigDecimal
 import java.time.YearMonth
+import java.math.RoundingMode
 
+/**
+ * StatisticsViewModel
+ *
+ * RULES (NON-NEGOTIABLE):
+ * - Read-only
+ * - Derived ONLY from transactions
+ * - Transfers are excluded
+ * - No account balance usage
+ * - No UI or chart logic
+ */
 class StatisticsViewModel(
     private val transactionRepository: TransactionRepository
 ) : ViewModel() {
 
+    /**
+     * UI-agnostic category slice.
+     * Suitable for charts and insights.
+     */
+    data class CategorySlice(
+        val categoryId: String,
+        val amount: BigDecimal,
+        val percentage: Float
+    )
+
+    /**
+     * CashflowEntry
+     * Represents daily income vs expense for the selected month.
+     */
+    data class CashflowEntry(
+        val day: Int,
+        val income: BigDecimal,
+        val expense: BigDecimal
+    )
+
+    /**
+     * Monthly category expense trend entry.
+     */
+    data class CategoryMonthlyTrend(
+        val categoryId: String,
+        val month: YearMonth,
+        val total: BigDecimal
+    )
+
+
     // ─────────────────────────────────────────────
-    // Selected month (shared concept with History)
+    // Selected month
     // ─────────────────────────────────────────────
 
     private val _selectedMonth =
@@ -21,10 +62,6 @@ class StatisticsViewModel(
 
     val selectedMonth: StateFlow<YearMonth> =
         _selectedMonth.asStateFlow()
-
-    fun selectMonth(month: YearMonth) {
-        _selectedMonth.value = month
-    }
 
     fun previousMonth() {
         _selectedMonth.value = _selectedMonth.value.minusMonths(1)
@@ -34,15 +71,18 @@ class StatisticsViewModel(
         _selectedMonth.value = _selectedMonth.value.plusMonths(1)
     }
 
+    fun selectMonth(month: YearMonth) {
+        _selectedMonth.value = month
+    }
 
     // ─────────────────────────────────────────────
-    // Monthly aggregates (TRANSACTION-DERIVED)
+    // Monthly transaction stream
     // ─────────────────────────────────────────────
 
     private val monthlyTransactions =
         combine(
             transactionRepository.observeTransactions(),
-            _selectedMonth
+            selectedMonth
         ) { transactions, month ->
             transactions.filter {
                 YearMonth.from(it.date) == month
@@ -50,11 +90,10 @@ class StatisticsViewModel(
         }
 
     // ─────────────────────────────────────────────
-    // Analytics-safe monthly transactions
-    // (EXCLUDES transfers by design)
+    // Analytics-safe transactions
     // ─────────────────────────────────────────────
 
-    private val monthlyAnalyticsTransactions =
+    private val analyticsTransactions =
         monthlyTransactions.map { list ->
             list.filter {
                 it.type == TransactionType.EXPENSE ||
@@ -62,114 +101,76 @@ class StatisticsViewModel(
             }
         }
 
+    // ─────────────────────────────────────────────
+    // Aggregates
+    // ─────────────────────────────────────────────
+
     val totalIncome: StateFlow<BigDecimal> =
-        monthlyAnalyticsTransactions
+        analyticsTransactions
             .map { list ->
-                list
-                    .filter { it.type == TransactionType.INCOME }
+                list.filter { it.type == TransactionType.INCOME }
                     .fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }
             }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = BigDecimal.ZERO
-            )
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BigDecimal.ZERO)
 
     val totalExpense: StateFlow<BigDecimal> =
-        monthlyAnalyticsTransactions
+        analyticsTransactions
             .map { list ->
-                list
-                    .filter { it.type == TransactionType.EXPENSE }
+                list.filter { it.type == TransactionType.EXPENSE }
                     .fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }
             }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = BigDecimal.ZERO
-            )
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BigDecimal.ZERO)
 
     val netAmount: StateFlow<BigDecimal> =
-        combine(
-            totalIncome,
-            totalExpense
-        ) { income, expense ->
+        combine(totalIncome, totalExpense) { income, expense ->
             income.subtract(expense)
-        }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = BigDecimal.ZERO
-        )
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BigDecimal.ZERO)
 
     // ─────────────────────────────────────────────
-    // Category breakdowns (MONTHLY)
+    // Category breakdowns
     // ─────────────────────────────────────────────
 
-    /**
-     * Monthly EXPENSE totals grouped by categoryId.
-     * Transfers and null categories are excluded.
-     */
     val expenseByCategory: StateFlow<Map<String, BigDecimal>> =
-        monthlyAnalyticsTransactions
-            .map { list ->
-                list
-                    .asSequence()
-                    .filter {
-                        it.type == TransactionType.EXPENSE &&
-                                it.categoryId != null
-                    }
+        analyticsTransactions
+            .map { txs ->
+                txs.filter { it.type == TransactionType.EXPENSE && it.categoryId != null }
                     .groupBy { it.categoryId!! }
-                    .mapValues { (_, transactions) ->
-                        transactions.fold(BigDecimal.ZERO) { acc, tx ->
-                            acc + tx.amount
-                        }
+                    .mapValues { (_, list) ->
+                        list.fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }
                     }
             }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = emptyMap()
-            )
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
-    /**
-     * Monthly INCOME totals grouped by categoryId.
-     * Null categories are excluded.
-     */
     val incomeByCategory: StateFlow<Map<String, BigDecimal>> =
-        monthlyAnalyticsTransactions
-            .map { list ->
-                list
-                    .asSequence()
-                    .filter {
-                        it.type == TransactionType.INCOME &&
-                                it.categoryId != null
-                    }
+        analyticsTransactions
+            .map { txs ->
+                txs.filter { it.type == TransactionType.INCOME && it.categoryId != null }
                     .groupBy { it.categoryId!! }
-                    .mapValues { (_, transactions) ->
-                        transactions.fold(BigDecimal.ZERO) { acc, tx ->
-                            acc + tx.amount
-                        }
+                    .mapValues { (_, list) ->
+                        list.fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }
                     }
             }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = emptyMap()
-            )
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     // ─────────────────────────────────────────────
-    // UI-ready helpers: sorting & percentages
+    // UI-ready slices
     // ─────────────────────────────────────────────
 
-    /**
-     * Represents a category slice ready for UI.
-     */
-    data class CategorySlice(
-        val categoryId: String,
-        val amount: BigDecimal,
-        val percentage: Float
-    )
+    val expenseCategorySlices: StateFlow<List<CategorySlice>> =
+        expenseByCategory
+            .map { buildCategorySlices(it) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    private fun buildRawSlices(
+    val incomeCategorySlices: StateFlow<List<CategorySlice>> =
+        incomeByCategory
+            .map { buildCategorySlices(it) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    // ─────────────────────────────────────────────
+    // Internal helper (MUST be inside ViewModel)
+    // ─────────────────────────────────────────────
+
+    private fun buildCategorySlices(
         totals: Map<String, BigDecimal>
     ): List<CategorySlice> {
 
@@ -178,24 +179,111 @@ class StatisticsViewModel(
         val totalAmount =
             totals.values.fold(BigDecimal.ZERO) { acc, v -> acc + v }
 
-        if (totalAmount.compareTo(BigDecimal.ZERO) == 0)
-            return emptyList()
+        if (totalAmount == BigDecimal.ZERO) return emptyList()
 
         return totals
             .map { (categoryId, amount) ->
-                val pct =
+                val percentage =
                     amount
                         .multiply(BigDecimal(100))
-                        .divide(totalAmount, 4, java.math.RoundingMode.HALF_UP)
+                        .divide(totalAmount, 4, RoundingMode.HALF_UP)
                         .toFloat()
 
                 CategorySlice(
                     categoryId = categoryId,
                     amount = amount,
-                    percentage = pct
+                    percentage = percentage
                 )
             }
             .sortedByDescending { it.amount }
     }
+
+    /**
+     * Daily cashflow for the selected month.
+     *
+     * Rules:
+     * - Derived ONLY from transactions
+     * - Transfers excluded
+     * - Grouped by day of month
+     */
+    val cashflowByDay: StateFlow<List<CashflowEntry>> =
+        analyticsTransactions
+            .map { transactions ->
+
+                transactions
+                    .groupBy { it.date.dayOfMonth }
+                    .map { (day, dayTransactions) ->
+
+                        val income =
+                            dayTransactions
+                                .filter { it.type == TransactionType.INCOME }
+                                .fold(BigDecimal.ZERO) { acc, tx ->
+                                    acc + tx.amount
+                                }
+
+                        val expense =
+                            dayTransactions
+                                .filter { it.type == TransactionType.EXPENSE }
+                                .fold(BigDecimal.ZERO) { acc, tx ->
+                                    acc + tx.amount
+                                }
+
+                        CashflowEntry(
+                            day = day,
+                            income = income,
+                            expense = expense
+                        )
+                    }
+                    .sortedBy { it.day }
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = emptyList()
+            )
+
+    /**
+     * Expense trends per category across months.
+     *
+     * Rules:
+     * - Expense only
+     * - Transfers excluded
+     * - Grouped by YearMonth
+     */
+    val categoryExpenseTrends: StateFlow<List<CategoryMonthlyTrend>> =
+        transactionRepository.observeTransactions()
+            .map { transactions ->
+
+                transactions
+                    .asSequence()
+                    .filter { it.type == TransactionType.EXPENSE }
+                    .filter { it.categoryId != null }
+                    .groupBy {
+                        Pair(
+                            it.categoryId!!,
+                            YearMonth.from(it.date)
+                        )
+                    }
+                    .map { (key, list) ->
+                        val (categoryId, month) = key
+
+                        CategoryMonthlyTrend(
+                            categoryId = categoryId,
+                            month = month,
+                            total = list.fold(BigDecimal.ZERO) { acc, tx ->
+                                acc + tx.amount
+                            }
+                        )
+                    }
+                    .sortedWith(
+                        compareBy<CategoryMonthlyTrend> { it.categoryId }
+                            .thenBy { it.month }
+                    )
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = emptyList()
+            )
 
 }

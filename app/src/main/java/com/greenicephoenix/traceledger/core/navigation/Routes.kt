@@ -9,12 +9,16 @@ object Routes {
     const val ADD_TRANSACTION = "add_transaction"
     const val EDIT_TRANSACTION = "edit_transaction/{transactionId}"
     const val STATISTICS = "statistics"
+    const val STATISTICS_OVERVIEW = "statistics/overview"
     // ── Statistics children ──
     const val STATISTICS_BREAKDOWN = "statistics/breakdown"
-    const val STATISTICS_TRENDS = "statistics/trends"
+    const val STATISTICS_INCOME = "statistics/income"
     const val STATISTICS_CASHFLOW = "statistics/cashflow"
     const val SETTINGS = "settings"
     const val CATEGORIES = "categories"
     const val ADD_CATEGORY = "add_category"
     const val EDIT_CATEGORY = "edit_category/{categoryId}"
+    const val BUDGETS = "budgets"
+    const val ADD_EDIT_BUDGET = "add-edit-budget"
+
 }

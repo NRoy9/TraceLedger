@@ -17,6 +17,7 @@ import com.greenicephoenix.traceledger.core.currency.CurrencyManager
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    onBudgetsClick: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
     val currentCurrency by CurrencyManager.currency.collectAsState()
@@ -51,6 +52,14 @@ fun SettingsScreen(
             subtitle = "Manage income and expense categories",
             onClick = { onNavigate(Routes.CATEGORIES) }
         )
+
+        // ───────── Budgets ─────────
+        SettingsItem(
+            title = "Budgets",
+            subtitle = "Monthly spending limits",
+            onClick = onBudgetsClick
+        )
+
     }
 
     if (showCurrencySheet) {
@@ -136,3 +145,4 @@ private fun CurrencyPickerBottomSheet(
         }
     }
 }
+

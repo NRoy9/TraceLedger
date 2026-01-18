@@ -4,6 +4,7 @@ import androidx.room.TypeConverter
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 
 class RoomConverters {
 
@@ -33,4 +34,14 @@ class RoomConverters {
     @TypeConverter
     fun toInstant(value: Long?): Instant? =
         value?.let { Instant.ofEpochMilli(it) }
+
+    // -------- YearMonth --------
+    @TypeConverter
+    fun fromYearMonth(value: YearMonth?): String? =
+        value?.toString() // e.g. 2026-01
+
+    @TypeConverter
+    fun toYearMonth(value: String?): YearMonth? =
+        value?.let { YearMonth.parse(it) }
+
 }

@@ -69,7 +69,8 @@ fun BottomBar(
 
         // 4️⃣ STATISTICS
         NavigationBarItem(
-            selected = currentRoute == Routes.STATISTICS,
+            //selected = currentRoute?.startsWith(Routes.STATISTICS) == true,
+            selected = currentRoute?.startsWith(Routes.STATISTICS) == true,
             onClick = { onNavigate(Routes.STATISTICS) },
             icon = { Icon(Icons.Default.BarChart, contentDescription = "Statistics") },
             colors = itemColors

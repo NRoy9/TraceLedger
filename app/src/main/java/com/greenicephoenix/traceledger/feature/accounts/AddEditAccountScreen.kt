@@ -30,6 +30,9 @@ import androidx.compose.ui.unit.sp
 import com.greenicephoenix.traceledger.domain.model.AccountUiModel
 import androidx.compose.ui.graphics.toArgb
 import java.math.BigDecimal
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 
 /**
  * Add / Edit Account Screen
@@ -94,12 +97,14 @@ fun AddEditAccountScreen(
 
     // ---------------- SCAFFOLD ----------------
 
-    Scaffold { paddingValues ->
+    Scaffold { padding ->
 
         Column(
             modifier = Modifier
+                //.fillMaxSize()
+                //.padding(paddingValues)
                 .fillMaxSize()
-                .padding(paddingValues)
+                .background(Color.Black)
         ) {
 
             // =========================
@@ -391,31 +396,37 @@ private fun ColorProtocolPicker(
     selectedColor: Color?,
     onColorSelect: (Color) -> Unit
 ) {
-    val colors = AccountColors.take(18) // exactly 16 colors
+    val colors = AccountColors.take(18)
 
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 44.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 220.dp), // ✅ CRITICAL FIX
+        horizontalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        contentPadding = PaddingValues(vertical = 4.dp)
+    ) {
+        items(colors) { color ->
+            val selected = selectedColor == color
 
-        colors.chunked(9).forEach { rowColors ->
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
+            Box(
+                modifier = Modifier
+                    .size(44.dp) // ✅ square grid cell / touch target
+                    .clickable { onColorSelect(color) },
+                contentAlignment = Alignment.Center
             ) {
-                rowColors.forEach { color ->
-                    val selected = selectedColor == color
-
-                    Box(
-                        modifier = Modifier
-                            .size(30.dp)
-                            .clip(CircleShape)
-                            .background(color)
-                            .border(
-                                width = if (selected) 3.dp else 1.dp,
-                                color = if (selected) Color.White else Color.Transparent,
-                                shape = CircleShape
-                            )
-                            .clickable { onColorSelect(color) }
-                    )
-                }
+                Box(
+                    modifier = Modifier
+                        .size(30.dp) // ✅ visual circle
+                        .clip(CircleShape)
+                        .background(color)
+                        .border(
+                            width = if (selected) 3.dp else 1.dp,
+                            color = if (selected) Color.White else Color.Transparent,
+                            shape = CircleShape
+                        )
+                )
             }
         }
     }

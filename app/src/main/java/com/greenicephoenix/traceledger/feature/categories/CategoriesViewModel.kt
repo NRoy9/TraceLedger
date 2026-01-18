@@ -14,9 +14,6 @@ class CategoriesViewModel : ViewModel() {
     private val _categories = MutableStateFlow(
         listOf(
             // -------- EXPENSE DEFAULTS --------
-            // -------- EXPENSE DEFAULTS --------
-            // -------- EXPENSE DEFAULTS --------
-            // -------- EXPENSE DEFAULTS --------
             CategoryUiModel(
                 id = "exp_food",
                 name = "Food",

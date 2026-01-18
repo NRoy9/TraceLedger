@@ -72,7 +72,7 @@ fun AddTransactionScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black)
-                .padding(padding)
+                //.padding(padding)
         ) {
 
             // ───────── HEADER ─────────

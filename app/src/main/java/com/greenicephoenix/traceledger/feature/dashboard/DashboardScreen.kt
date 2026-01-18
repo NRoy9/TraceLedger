@@ -27,11 +27,15 @@ import androidx.compose.runtime.getValue
 import com.greenicephoenix.traceledger.core.currency.CurrencyManager
 import com.greenicephoenix.traceledger.core.currency.CurrencyFormatter
 import java.math.BigDecimal
+import kotlin.math.min
+import com.greenicephoenix.traceledger.feature.budgets.ui.BudgetColors
+import com.greenicephoenix.traceledger.feature.dashboard.components.BudgetWarningBanner
 
 @Composable
 fun DashboardScreen(
     accounts: List<AccountUiModel>,
     statisticsViewModel: com.greenicephoenix.traceledger.feature.statistics.StatisticsViewModel,
+    budgetsViewModel: com.greenicephoenix.traceledger.feature.budgets.BudgetsViewModel,
     onNavigate: (String) -> Unit,
     onAddAccount: () -> Unit,
     onAccountClick: (AccountUiModel) -> Unit
@@ -42,6 +46,30 @@ fun DashboardScreen(
     val monthlyIncome by statisticsViewModel.totalIncome.collectAsState()
     val monthlyExpense by statisticsViewModel.totalExpense.collectAsState()
     val monthlyNet by statisticsViewModel.netAmount.collectAsState()
+
+    val budgetStatuses by budgetsViewModel.budgetStatuses.collectAsState()
+    val totalLimit = budgetStatuses.fold(BigDecimal.ZERO) { acc, b ->
+        acc + b.limit
+    }
+
+    val totalUsed = budgetStatuses.fold(BigDecimal.ZERO) { acc, b ->
+        acc + b.used
+    }
+
+    val budgetProgress =
+        if (totalLimit > BigDecimal.ZERO)
+            totalUsed.divide(totalLimit, 4, java.math.RoundingMode.HALF_UP).toFloat()
+        else 0f
+
+    val budgetState =
+        when {
+            budgetProgress >= 1f -> com.greenicephoenix.traceledger.feature.budgets.domain.BudgetState.EXCEEDED
+            budgetProgress >= 0.7f -> com.greenicephoenix.traceledger.feature.budgets.domain.BudgetState.WARNING
+            else -> com.greenicephoenix.traceledger.feature.budgets.domain.BudgetState.SAFE
+        }
+
+    val hasExceededBudgets by budgetsViewModel.hasExceededBudgets.collectAsState()
+    val exceededBudgetsCount by budgetsViewModel.exceededBudgetsCount.collectAsState()
 
     val totalBalanceAmount = accounts
         .filter { it.includeInTotal }
@@ -62,17 +90,31 @@ fun DashboardScreen(
         item(span = { GridItemSpan(2) }) {
             Column {
                 Text(
-                    text = "TRACE LEDGER",
+                    text = "OVERVIEW",
                     style = MaterialTheme.typography.headlineMedium,
                     color = Color.White
                 )
+
                 Text(
-                    text = "STATUS: READY",
+                    text = "This month",
                     style = MaterialTheme.typography.labelSmall,
-                    color = NothingRed
+                    color = Color.Gray
+                )
+
+            }
+        }
+
+        if (hasExceededBudgets) {
+            item(span = { GridItemSpan(2) }) {
+                BudgetWarningBanner(
+                    exceededCount = exceededBudgetsCount,
+                    onClick = {
+                        onNavigate(Routes.BUDGETS)
+                    }
                 )
             }
         }
+
 
         // ================= TOTAL BALANCE =================
         item(span = { GridItemSpan(2) }) {
@@ -97,7 +139,7 @@ fun DashboardScreen(
                             amount = totalBalanceAmount.toPlainString(),
                             currency = currency
                         ),
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = MaterialTheme.typography.displaySmall,
                         color = Color.White
                     )
 
@@ -106,19 +148,15 @@ fun DashboardScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "IN  " + CurrencyFormatter.format(
-                                monthlyIncome.toPlainString(),
-                                currency
-                            ),
-                            color = Color(0xFF4CAF50)
+                            text = "Income  ${CurrencyFormatter.format(monthlyIncome.toPlainString(), currency)}",
+                            color = Color(0xFF4CAF50),
+                            style = MaterialTheme.typography.bodySmall
                         )
 
                         Text(
-                            text = "OUT  " + CurrencyFormatter.format(
-                                monthlyExpense.toPlainString(),
-                                currency
-                            ),
-                            color = NothingRed
+                            text = "Expense  ${CurrencyFormatter.format(monthlyExpense.toPlainString(), currency)}",
+                            color = NothingRed,
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
                 }
@@ -147,7 +185,7 @@ fun DashboardScreen(
                             monthlyNet.toPlainString(),
                             currency
                         ),
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = MaterialTheme.typography.titleLarge,
                         color = if (monthlyNet >= BigDecimal.ZERO)
                             Color(0xFF4CAF50)   // green
                         else
@@ -159,10 +197,27 @@ fun DashboardScreen(
 
         // ================= MONTHLY BUDGET =================
         item(span = { GridItemSpan(2) }) {
-            MonthlyBudgetCard(
-                used = 0.0,
-                limit = 0.0
-            )
+            if (budgetStatuses.isNotEmpty()) {
+                MonthlyBudgetCard(
+                    used = totalUsed.toDouble(),
+                    limit = totalLimit.toDouble(),
+                    state = budgetState,
+                    onClick = {
+                        onNavigate(Routes.BUDGETS)
+                    }
+                )
+            } else {
+                Text(
+                    text = "Set monthly budgets to control spending",
+                    color = Color.Gray,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+
+        // ✅ VISUAL SEPARATION (SECTION RHYTHM)
+        item(span = { GridItemSpan(2) }) {
+            Spacer(modifier = Modifier.height(8.dp))
         }
 
         // ================= MY ACCOUNTS =================
@@ -212,52 +267,6 @@ fun DashboardScreen(
         }
     }
 }
-
-@Composable
-private fun MonthlyBudgetCard(
-    used: Double = 0.0,
-    limit: Double = 0.0
-) {
-    val currency by CurrencyManager.currency.collectAsState()
-
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF121212)
-        ),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = "MONTHLY BUDGET",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
-            )
-
-            Text(
-                text = "${CurrencyFormatter.format(
-                    used.toBigDecimal().toPlainString(),
-                    currency
-                )} / ${CurrencyFormatter.format(
-                    limit.toBigDecimal().toPlainString(),
-                    currency
-                )}",
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White
-            )
-
-            Text(
-                text = "LOAD: 0%",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
-            )
-        }
-    }
-}
-
 
 @Composable
 private fun AddAccountCard(onClick: () -> Unit) {
@@ -379,5 +388,88 @@ private fun IncludedBadge(isIncluded: Boolean) {
             tint = color,
             modifier = Modifier.size(12.dp)
         )
+    }
+}
+
+@Composable
+fun MonthlyBudgetCard(
+    used: Double = 0.0,
+    limit: Double = 0.0,
+    state: com.greenicephoenix.traceledger.feature.budgets.domain.BudgetState,
+    onClick: () -> Unit
+) {
+    val currency by CurrencyManager.currency.collectAsState()
+
+    val progress =
+        if (limit > 0.0) (used / limit).toFloat() else 0f
+
+    val clampedProgress = min(progress, 1f)
+
+    val accentColor = BudgetColors.accent(state)
+
+
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF121212)
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+
+            Text(
+                text = "MONTHLY BUDGET",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray
+            )
+
+            Text(
+                text =
+                    "${CurrencyFormatter.format(
+                        used.toBigDecimal().toPlainString(),
+                        currency
+                    )} / ${CurrencyFormatter.format(
+                        limit.toBigDecimal().toPlainString(),
+                        currency
+                    )}",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White
+            )
+
+            Text(
+                text = if (limit > 0.0)
+                    "LOAD: ${(clampedProgress * 100).toInt()}%"
+                else
+                    "LOAD: 0%",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray
+            )
+
+            /* ---------- ACCENT PROGRESS LINE ---------- */
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .background(
+                        color = Color(0xFF2A2A2A),
+                        shape = RoundedCornerShape(2.dp)
+                    )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(clampedProgress)
+                        .height(4.dp)
+                        .background(
+                            color = accentColor,
+                            shape = RoundedCornerShape(2.dp)
+                        )
+                )
+            }
+        }
     }
 }
