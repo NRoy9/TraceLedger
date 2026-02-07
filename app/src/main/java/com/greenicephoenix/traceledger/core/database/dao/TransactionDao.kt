@@ -7,7 +7,6 @@ import androidx.room.Query
 import com.greenicephoenix.traceledger.core.database.entity.TransactionEntity
 import kotlinx.coroutines.flow.Flow
 import androidx.room.Update
-import com.greenicephoenix.traceledger.core.database.entity.CategoryEntity
 
 @Dao
 interface TransactionDao {
