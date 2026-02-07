@@ -2,10 +2,14 @@ package com.greenicephoenix.traceledger.core.di
 
 import android.content.Context
 import com.greenicephoenix.traceledger.core.database.TraceLedgerDatabase
+import com.greenicephoenix.traceledger.core.export.ExportService
+import com.greenicephoenix.traceledger.core.importer.ImportService
 import com.greenicephoenix.traceledger.core.repository.AccountRepository
 import com.greenicephoenix.traceledger.core.repository.TransactionRepository
 import com.greenicephoenix.traceledger.feature.statistics.StatisticsViewModelFactory
 import com.greenicephoenix.traceledger.feature.budgets.data.BudgetRepository
+import com.greenicephoenix.traceledger.core.repository.CategoryRepository
+import com.greenicephoenix.traceledger.feature.categories.CategoriesViewModelFactory
 
 class AppContainer(context: Context) {
 
@@ -21,6 +25,13 @@ class AppContainer(context: Context) {
             accountDao = database.accountDao()
         )
 
+    val categoryRepository: CategoryRepository =
+        CategoryRepository(database.categoryDao())
+
+    val categoriesViewModelFactory =
+        CategoriesViewModelFactory(categoryRepository)
+
+
     val budgetRepository: BudgetRepository by lazy {
         BudgetRepository(
             database.budgetDao()
@@ -29,5 +40,20 @@ class AppContainer(context: Context) {
 
     val statisticsViewModelFactory =
         StatisticsViewModelFactory(transactionRepository)
+
+    val exportService by lazy {
+        ExportService(
+            database = database,
+            contentResolver = context.contentResolver
+        )
+    }
+
+    val importService by lazy {
+        ImportService(
+            database = database,
+            contentResolver = context.contentResolver
+        )
+    }
+
 
 }

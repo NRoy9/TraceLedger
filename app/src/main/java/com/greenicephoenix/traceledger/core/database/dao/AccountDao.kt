@@ -50,4 +50,13 @@ interface AccountDao {
         delta: BigDecimal
     )
 
+    @Query("SELECT * FROM accounts")
+    suspend fun getAllOnce(): List<AccountEntity>
+
+    @Insert
+    suspend fun insert(entity: AccountEntity)
+
+    @Query("DELETE FROM accounts")
+    suspend fun deleteAll()
+
 }

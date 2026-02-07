@@ -15,7 +15,6 @@ import androidx.compose.ui.unit.dp
 import com.greenicephoenix.traceledger.core.ui.theme.NothingRed
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import com.greenicephoenix.traceledger.feature.budgets.domain.BudgetState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons

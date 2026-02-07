@@ -25,15 +25,15 @@ import java.util.UUID
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.SolidColor
 import kotlinx.coroutines.launch
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.greenicephoenix.traceledger.feature.categories.CategoriesViewModel
 import com.greenicephoenix.traceledger.domain.model.CategoryType
 import com.greenicephoenix.traceledger.feature.addtransaction.CategorySelector
+import com.greenicephoenix.traceledger.domain.model.CategoryUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditBudgetScreen(
     viewModel: BudgetsViewModel,
+    categories: List<CategoryUiModel>,
     budgetId: String?,
     month: YearMonth,
     onBack: () -> Unit
@@ -54,9 +54,6 @@ fun AddEditBudgetScreen(
             .toSet()
     }
 
-    // 🔑 reuse CategoriesViewModel (same as elsewhere)
-    val categoriesViewModel: CategoriesViewModel = viewModel()
-    val categories by categoriesViewModel.categories.collectAsState()
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     var selectedCategoryId by remember { mutableStateOf<String?>(null) }

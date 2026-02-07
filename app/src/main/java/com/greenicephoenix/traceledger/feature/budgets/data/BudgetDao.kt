@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import com.greenicephoenix.traceledger.core.database.entity.TransactionEntity
 import kotlinx.coroutines.flow.Flow
 import java.time.YearMonth
 
@@ -18,4 +19,14 @@ interface BudgetDao {
 
     @Query("DELETE FROM budgets WHERE id = :budgetId")
     suspend fun deleteBudget(budgetId: String)
+
+    @Query("SELECT * FROM budgets")
+    suspend fun getAllOnce(): List<BudgetEntity>
+
+    @Insert
+    suspend fun insert(entity: BudgetEntity)
+
+    @Query("DELETE FROM budgets")
+    suspend fun deleteAll()
+
 }

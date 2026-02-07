@@ -41,7 +41,6 @@ import com.greenicephoenix.traceledger.feature.budgets.AddEditBudgetScreen
 import com.greenicephoenix.traceledger.feature.budgets.BudgetsViewModel
 import com.greenicephoenix.traceledger.feature.budgets.BudgetsViewModelFactory
 
-
 /**
  * Central navigation graph for TraceLedger
  * This file owns ALL navigation decisions.
@@ -51,16 +50,23 @@ fun TraceLedgerNavGraph(
     navController: NavHostController,
     snackbarHostState: SnackbarHostState
 ) {
-    val categoriesViewModel: CategoriesViewModel = viewModel()
-    val categories by categoriesViewModel.categories.collectAsState()
+
     val context = LocalContext.current
     val app = context.applicationContext as TraceLedgerApp
+
+    val categoriesViewModel: CategoriesViewModel =
+        viewModel(
+            factory = app.container.categoriesViewModelFactory
+        )
+
     val budgetsViewModel: BudgetsViewModel = viewModel(
         factory = BudgetsViewModelFactory(
             budgetRepository = app.container.budgetRepository,
             transactionRepository = app.container.transactionRepository
         )
     )
+
+    val categories by categoriesViewModel.categories.collectAsState()
 
 
     NavHost(
@@ -173,7 +179,6 @@ fun TraceLedgerNavGraph(
                 )
 
             val accountsViewModel: AccountsViewModel = viewModel()
-            val categoriesViewModel: CategoriesViewModel = viewModel()
 
             HistoryScreen(
                 viewModel = transactionsViewModel,
@@ -318,9 +323,6 @@ fun TraceLedgerNavGraph(
                         factory = app.container.statisticsViewModelFactory
                     )
 
-                val categoriesViewModel: CategoriesViewModel = viewModel()
-                val categories by categoriesViewModel.categories.collectAsState()
-
                 StatisticsScreen(
                     viewModel = statisticsViewModel,
                     categoryMap = categories.associateBy { it.id },
@@ -346,9 +348,6 @@ fun TraceLedgerNavGraph(
                         factory = app.container.statisticsViewModelFactory
                     )
 
-                val categoriesViewModel: CategoriesViewModel = viewModel()
-                val categories by categoriesViewModel.categories.collectAsState()
-
                 ExpenseBreakdownScreen(
                     viewModel = statisticsViewModel,
                     categoryMap = categories.associateBy { it.id },
@@ -371,9 +370,6 @@ fun TraceLedgerNavGraph(
                         parentEntry,
                         factory = app.container.statisticsViewModelFactory
                     )
-
-                val categoriesViewModel: CategoriesViewModel = viewModel()
-                val categories by categoriesViewModel.categories.collectAsState()
 
                 IncomeBreakdownScreen(
                     viewModel = statisticsViewModel,
@@ -408,13 +404,65 @@ fun TraceLedgerNavGraph(
 
         /* ---------------- SETTINGS ---------------- */
         composable(Routes.SETTINGS) {
+            val scope = rememberCoroutineScope()
+
             SettingsScreen(
                 onBudgetsClick = {
                     navController.navigate(Routes.BUDGETS)
                 },
                 onNavigate = { route ->
                     navController.navigate(route)
+                },
+                onExportSelected = { format ->
+                    // TODO: trigger SAF export flow
+                    // format == ExportFormat.JSON or CSV
+                },
+                onExportUriReady = { format, uri ->
+                    scope.launch {
+                        try {
+                            app.container.exportService.export(format, uri)
+                            snackbarHostState.showSnackbar("Export completed")
+                        } catch (e: Exception) {
+                            snackbarHostState.showSnackbar("Export failed")
+                        }
+                    }
+                },
+                onImportContinue = {
+                    // handled by screen → SAF launcher
+                },
+                onImportUriReady = { uri ->
+                    scope.launch {
+                        try {
+                            app.container.importService.importJson(
+                                uri = uri,
+                                onProgress = { /* no-op for now */ }
+                            )
+                            snackbarHostState.showSnackbar("Import completed")
+                        } catch (e: Exception) {
+                            snackbarHostState.showSnackbar(
+                                e.message ?: "Import failed"
+                            )
+                        }
+                    }
+                },
+                onImportPreviewRequested = { uri ->
+                    app.container.importService.previewCsv(uri)
+                },
+                onImportConfirmed = { uri, onProgress ->
+                    scope.launch {
+                        app.container.importService.importCsvTransactions(
+                            uri = uri,
+                            onProgress = onProgress
+                        )
+                        snackbarHostState.showSnackbar("CSV import completed")
+                    }
+                },
+                onImportError = { message ->                // ✅ NEW
+                    scope.launch {
+                        snackbarHostState.showSnackbar(message)
+                    }
                 }
+
             )
         }
 
@@ -471,9 +519,6 @@ fun TraceLedgerNavGraph(
         /* ---------------- BUDGETS ---------------- */
         composable(Routes.BUDGETS) {
 
-            val categoriesViewModel: CategoriesViewModel = viewModel()
-            val categories by categoriesViewModel.categories.collectAsState()
-
             BudgetsScreen(
                 viewModel = budgetsViewModel,
                 categories = categories,
@@ -494,6 +539,7 @@ fun TraceLedgerNavGraph(
 
             AddEditBudgetScreen(
                 viewModel = budgetsViewModel,
+                categories = categories,
                 budgetId = null,
                 month = selectedMonth,
                 onBack = { navController.popBackStack() }
@@ -517,6 +563,7 @@ fun TraceLedgerNavGraph(
 
             AddEditBudgetScreen(
                 viewModel = budgetsViewModel,
+                categories = categories,
                 budgetId = budgetId,
                 month = selectedMonth,
                 onBack = { navController.popBackStack() }

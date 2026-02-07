@@ -8,28 +8,32 @@ import androidx.room.TypeConverters
 import com.greenicephoenix.traceledger.core.database.converters.RoomConverters
 import com.greenicephoenix.traceledger.core.database.dao.AccountDao
 import com.greenicephoenix.traceledger.core.database.dao.TransactionDao
+import com.greenicephoenix.traceledger.core.database.dao.CategoryDao
 import com.greenicephoenix.traceledger.core.database.entity.AccountEntity
 import com.greenicephoenix.traceledger.core.database.entity.TransactionEntity
+import com.greenicephoenix.traceledger.core.database.entity.CategoryEntity
 import com.greenicephoenix.traceledger.feature.budgets.data.BudgetDao
 import com.greenicephoenix.traceledger.feature.budgets.data.BudgetEntity
-
+import com.greenicephoenix.traceledger.BuildConfig
+import com.greenicephoenix.traceledger.core.database.migrations.*
 
 @Database(
     entities = [
         AccountEntity::class,
         TransactionEntity::class,
-        BudgetEntity::class
+        BudgetEntity::class,
+        CategoryEntity::class
     ],
-    version = 3,
-    exportSchema = false
+    version = 7,
+    exportSchema = true
 )
 @TypeConverters(RoomConverters::class)
 abstract class TraceLedgerDatabase : RoomDatabase() {
 
     abstract fun accountDao(): AccountDao
     abstract fun transactionDao(): TransactionDao
-
     abstract fun budgetDao(): BudgetDao
+    abstract fun categoryDao(): CategoryDao
 
     companion object {
 
@@ -38,16 +42,31 @@ abstract class TraceLedgerDatabase : RoomDatabase() {
 
         fun getInstance(context: Context): TraceLedgerDatabase {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: Room.databaseBuilder(
+                INSTANCE ?: buildDatabase(context).also {
+                    INSTANCE = it
+                }
+            }
+        }
+
+        private fun buildDatabase(context: Context): TraceLedgerDatabase {
+            val builder =
+                Room.databaseBuilder(
                     context.applicationContext,
                     TraceLedgerDatabase::class.java,
                     "traceledger.db"
                 )
-                    .fallbackToDestructiveMigration()
-                    .build()
-                    .also { INSTANCE = it }
-            }
-        }
+                    .addMigrations(
+                        MIGRATION_4_5,
+                        MIGRATION_5_6,
+                        MIGRATION_6_7
+                    )
 
+            if (BuildConfig.DEBUG) {
+                // ✅ Debug-only safety valve
+                builder.fallbackToDestructiveMigration()
+            }
+
+            return builder.build()
+        }
     }
 }

@@ -7,6 +7,7 @@ import androidx.room.Query
 import com.greenicephoenix.traceledger.core.database.entity.TransactionEntity
 import kotlinx.coroutines.flow.Flow
 import androidx.room.Update
+import com.greenicephoenix.traceledger.core.database.entity.CategoryEntity
 
 @Dao
 interface TransactionDao {
@@ -28,4 +29,13 @@ interface TransactionDao {
 
     @Update
     suspend fun updateTransaction(transaction: TransactionEntity)
+
+    @Query("SELECT * FROM transactions ORDER BY date ASC")
+    suspend fun getAllOnce(): List<TransactionEntity>
+
+    @Insert
+    suspend fun insert(entity: TransactionEntity)
+
+    @Query("DELETE FROM transactions")
+    suspend fun deleteAll()
 }
