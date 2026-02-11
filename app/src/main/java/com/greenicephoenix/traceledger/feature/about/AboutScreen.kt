@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -28,11 +27,13 @@ fun AboutScreen(
 
     val context = LocalContext.current
 
+    val versionName = context.packageManager
+        .getPackageInfo(context.packageName, 0)
+        .versionName
+
     val changelogText = remember {
         loadChangelog(context)
     }
-
-    val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
 
     Scaffold(
         topBar = {
@@ -69,14 +70,10 @@ fun AboutScreen(
                     .fillMaxWidth(),
                 shape = RoundedCornerShape(28.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor =
-                        if (isLight)
-                            MaterialTheme.colorScheme.surface
-                        else
-                            Color(0xFF0F0F0F)
+                    containerColor = MaterialTheme.colorScheme.surface
                 ),
                 elevation = CardDefaults.cardElevation(
-                    defaultElevation = if (isLight) 2.dp else 8.dp
+                    defaultElevation = 4.dp
                 )
             ) {
                 Column(

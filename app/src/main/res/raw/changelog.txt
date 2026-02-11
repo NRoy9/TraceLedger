@@ -1,8 +1,13 @@
+Version 0.3.0 — Major UI Upgrade
+• Full light mode support across the app
+• Improved contrast and readability
+• Cleaner dashboard and financial summaries
+• More consistent Material 3 surfaces
+• Refined charts and legends
+• Improved bottom navigation clarity
+• Better typography hierarchy and spacing
+
 Version 0.2.0
 • Budgets support
 • Improved import preview
 • UI stability improvements
-
-Version 0.1.0
-• Initial release
-• Accounts, categories, transactions
