@@ -20,7 +20,6 @@ import com.greenicephoenix.traceledger.domain.model.AccountUiModel
 import com.greenicephoenix.traceledger.domain.model.CategoryUiModel
 import com.greenicephoenix.traceledger.domain.model.TransactionType
 import com.greenicephoenix.traceledger.domain.model.TransactionUiModel
-import com.greenicephoenix.traceledger.feature.transactions.components.MonthHeader
 import com.greenicephoenix.traceledger.feature.transactions.components.TransactionRow
 import com.greenicephoenix.traceledger.feature.categories.CategoryIcons
 import com.greenicephoenix.traceledger.feature.transactions.components.TransactionDetailSheet
@@ -53,14 +52,14 @@ fun HistoryScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
 
         Text(
             text = "TRANSACTIONS",
             style = MaterialTheme.typography.headlineMedium,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier
                 .clickable { onBack() }
         )
@@ -70,16 +69,20 @@ fun HistoryScreen(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = viewModel::updateSearch,
-            placeholder = { Text("Search history…") },
+            placeholder = {
+                Text(
+                    "Search history…",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            },
             singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color.DarkGray,
-                unfocusedBorderColor = Color.DarkGray,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                cursorColor = Color.White
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                cursorColor = MaterialTheme.colorScheme.primary
             )
         )
 
@@ -100,7 +103,15 @@ fun HistoryScreen(
                 FilterChip(
                     selected = selected,
                     onClick = { viewModel.updateTypeFilter(type) },
-                    label = { Text(label) }
+                    label = {
+                        Text(
+                            label,
+                            color = if (selected)
+                                MaterialTheme.colorScheme.onPrimary
+                            else
+                                MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 )
             }
         }
@@ -112,15 +123,6 @@ fun HistoryScreen(
             onPrevious = { viewModel.goToPreviousMonth() },
             onNext = { viewModel.goToNextMonth() }
         )
-        /*
-        MonthHeader(
-            month = month,
-            totalIn = CurrencyFormatter.format(totalIn.toPlainString(), currency),
-            totalOut = CurrencyFormatter.format(totalOut.toPlainString(), currency),
-            onPrevious = { viewModel.goToPreviousMonth() },
-            onNext = { viewModel.goToNextMonth() }
-        )
-        */
 
         Spacer(Modifier.height(12.dp))
 
@@ -161,7 +163,7 @@ fun HistoryScreen(
 
                 val iconAndAccentColor =
                     if (isTransfer) {
-                        Color.Gray
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     } else {
                         Color(category?.color ?: 0xFF9E9E9E)
                     }

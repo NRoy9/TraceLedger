@@ -25,42 +25,36 @@ val TraceLedgerTypography = Typography(
     headlineLarge = TextStyle(
         fontFamily = DotMatrixFont,
         fontWeight = FontWeight.Normal,
-        fontSize = 32.sp,
-        color = TextPrimary
+        fontSize = 32.sp
     ),
 
     headlineMedium = TextStyle(
         fontFamily = DotMatrixFont,
         fontWeight = FontWeight.Normal,
-        fontSize = 24.sp,
-        color = TextPrimary
+        fontSize = 24.sp
     ),
 
     // Section titles
     titleLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 18.sp,
-        color = TextPrimary
+        fontSize = 18.sp
     ),
 
     // Body text
     bodyLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        color = TextPrimary
+        fontSize = 16.sp
     ),
 
     bodyMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontSize = 14.sp,
-        color = TextSecondary
+        fontSize = 14.sp
     ),
 
     labelSmall = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontSize = 12.sp,
-        color = TextSecondary
+        fontSize = 12.sp
     )
 )

@@ -26,6 +26,9 @@ fun IncomeDonutChart(
         return
     }
 
+    val fallbackColor = MaterialTheme.colorScheme.surfaceVariant
+    val onSurface = MaterialTheme.colorScheme.onSurface
+
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center
@@ -46,7 +49,7 @@ fun IncomeDonutChart(
                     categoryMap[slice.categoryId]
                         ?.color
                         ?.let { Color(it) }
-                        ?: Color.DarkGray
+                        ?: fallbackColor
 
                 drawArc(
                     color = color,
@@ -65,12 +68,12 @@ fun IncomeDonutChart(
             Text(
                 text = "INCOME",
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
+                color = onSurface.copy(alpha = 0.6f)
             )
             Text(
                 text = "BREAKDOWN",
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.White
+                color = onSurface
             )
         }
     }
@@ -85,7 +88,7 @@ private fun EmptyIncomeChartPlaceholder() {
         Text(
             text = "No income data",
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
     }
 }

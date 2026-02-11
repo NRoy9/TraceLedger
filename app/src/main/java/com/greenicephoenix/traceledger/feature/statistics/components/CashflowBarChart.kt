@@ -11,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
@@ -68,6 +67,8 @@ fun CashflowBarChart(
         label = "cashflow-bar-scale"
     )
 
+    val incomeColor = MaterialTheme.colorScheme.primary
+    val expenseColor = MaterialTheme.colorScheme.error
 
     Canvas(
         modifier = modifier
@@ -164,13 +165,13 @@ fun CashflowBarChart(
             val expenseX = groupCenterX + (intraBarGap / 2f)
 
             drawRect(
-                Color(0xFF4CAF50),
+                incomeColor,
                 Offset(incomeX, chartBottom - incomeHeight),
                 Size(barWidth, incomeHeight * if (isSelected) selectedBarScale else 1f)
             )
 
             drawRect(
-                Color(0xFFE53935),
+                expenseColor,
                 Offset(expenseX, chartBottom - expenseHeight),
                 Size(barWidth, expenseHeight * if (isSelected) selectedBarScale else 1f)
             )

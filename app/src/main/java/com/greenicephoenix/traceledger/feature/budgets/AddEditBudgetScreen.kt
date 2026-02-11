@@ -24,6 +24,7 @@ import java.time.YearMonth
 import java.util.UUID
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.luminance
 import kotlinx.coroutines.launch
 import com.greenicephoenix.traceledger.domain.model.CategoryType
 import com.greenicephoenix.traceledger.feature.addtransaction.CategorySelector
@@ -71,6 +72,20 @@ fun AddEditBudgetScreen(
 
     val scope = rememberCoroutineScope()
 
+    val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
+
+    val surfaceGradient = if (isLight) {
+        listOf(
+            MaterialTheme.colorScheme.surface,
+            MaterialTheme.colorScheme.surface
+        )
+    } else {
+        listOf(
+            Color(0xFF1A1A1A),
+            Color(0xFF0F0F0F)
+        )
+    }
+
     Scaffold { padding ->
 
         Column(
@@ -78,7 +93,7 @@ fun AddEditBudgetScreen(
                 .fillMaxSize()
                 //.statusBarsPadding()
                 //.padding(padding)
-                .background(Color.Black)
+                .background(MaterialTheme.colorScheme.background)
         ) {
 
             /* ---------- HEADER ---------- */
@@ -94,20 +109,20 @@ fun AddEditBudgetScreen(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Cancel",
-                        tint = Color.White
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
                 Text(
                     text = if (budgetId == null) "Add Budget" else "Edit Budget",
                     modifier = Modifier.weight(1f),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.titleMedium
                 )
                 if (budgetId != null) {
                     Text(
                         text = "Editing existing budget",
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         style = MaterialTheme.typography.labelSmall
                     )
                 }
@@ -152,14 +167,14 @@ fun AddEditBudgetScreen(
             HorizontalDivider(
                 Modifier,
                 DividerDefaults.Thickness,
-                color = Color.White.copy(alpha = 0.1f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
             )
 
             /* ---------- CONTENT ---------- */
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black),
+                    .background(MaterialTheme.colorScheme.background),
                 contentAlignment = Alignment.TopCenter
             ) {
                 Card(
@@ -173,12 +188,7 @@ fun AddEditBudgetScreen(
                 ) {
                     Box(
                         modifier = Modifier.background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    Color(0xFF1A1A1A),
-                                    Color(0xFF0F0F0F)
-                                )
-                            ),
+                            brush = Brush.verticalGradient(surfaceGradient),
                             shape = RoundedCornerShape(28.dp)
                         )
                     ) {
@@ -203,21 +213,21 @@ fun AddEditBudgetScreen(
                                     Icon(
                                         imageVector = Icons.Default.ChevronLeft,
                                         contentDescription = "Previous Month",
-                                        tint = if (isEditMode) Color.Gray else Color.White
+                                        tint = if (isEditMode) Color.Gray else MaterialTheme.colorScheme.onSurface
                                     )
                                 }
 
                                 Text(
                                     text = selectedMonth.month.name.lowercase()
                                         .replaceFirstChar { it.uppercase() } + " " + selectedMonth.year,
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     style = MaterialTheme.typography.bodyMedium
                                 )
 
                                 if (isEditMode) {
                                     Text(
                                         text = "Month locked",
-                                        color = Color.Gray,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                         style = MaterialTheme.typography.labelSmall
                                     )
                                 }
@@ -233,7 +243,7 @@ fun AddEditBudgetScreen(
                                     Icon(
                                         imageVector = Icons.Default.ChevronRight,
                                         contentDescription = "Next Month",
-                                        tint = if (isEditMode) Color.Gray else Color.White
+                                        tint = if (isEditMode) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                             }
@@ -275,7 +285,7 @@ fun AddEditBudgetScreen(
 
                                 HorizontalDivider(
                                     thickness = 0.5.dp,
-                                    color = Color.White.copy(alpha = 0.12f)
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
                                 )
 
                                 Spacer(modifier = Modifier.height(16.dp))
@@ -322,13 +332,13 @@ fun AddEditBudgetScreen(
                 Text(
                     text = "Delete budget?",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Text(
                     text = "This action cannot be undone.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
 
                 Row(

@@ -12,9 +12,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.greenicephoenix.traceledger.domain.model.TransactionType
@@ -31,6 +31,21 @@ fun TransactionRow(
     amountText: String,
     onClick: () -> Unit
 ) {
+    val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
+
+    val gradientColors =
+        if (isLight) {
+            listOf(
+                MaterialTheme.colorScheme.surface,
+                MaterialTheme.colorScheme.surface
+            )
+        } else {
+            listOf(
+                Color(0xFF1A1A1A),
+                Color(0xFF0F0F0F)
+            )
+        }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -45,17 +60,11 @@ fun TransactionRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF1A1A1A), // top highlight
-                            Color(0xFF0F0F0F)  // base
-                        )
-                    ),
+                    brush = Brush.verticalGradient(gradientColors),
                     shape = RoundedCornerShape(18.dp)
                 )
         ) {
             Column(
-                //modifier = Modifier.padding(16.dp),
                 modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -65,10 +74,9 @@ fun TransactionRow(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
 
-                    // ───── ICON (SPANS BOTH ROWS) ─────
+                    // ICON
                     Box(
-                        modifier = Modifier
-                            .size(46.dp),
+                        modifier = Modifier.size(46.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -81,13 +89,11 @@ fun TransactionRow(
 
                     Spacer(Modifier.width(12.dp))
 
-                    // ───── TEXT CONTENT ─────
                     Column(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
 
-                        // CATEGORY · NOTE
                         Text(
                             text = buildString {
                                 append(categoryName)
@@ -97,20 +103,18 @@ fun TransactionRow(
                                 }
                             },
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onSurface
                         )
 
-                        // ACCOUNT · DATE (slightly larger)
                         Text(
                             text = "$accountName · ${transaction.date}",
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontSize = MaterialTheme.typography.bodySmall.fontSize * 1.1
                             ),
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                     }
 
-                    // ───── AMOUNT (slightly larger) ─────
                     Text(
                         text = amountText,
                         style = MaterialTheme.typography.bodyLarge.copy(
@@ -118,27 +122,26 @@ fun TransactionRow(
                         ),
                         color =
                             when (transaction.type) {
-                                TransactionType.EXPENSE -> Color(0xFFE53935)
-                                TransactionType.INCOME -> Color(0xFF4CAF50)
-                                TransactionType.TRANSFER -> Color.Gray
+                                TransactionType.EXPENSE ->
+                                    MaterialTheme.colorScheme.error
+
+                                TransactionType.INCOME ->
+                                    MaterialTheme.colorScheme.primary
+
+                                TransactionType.TRANSFER ->
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             }
                     )
                 }
 
-                // ───── ACCENT LINE (SHORTER) ─────
+                // Accent line
                 Box(
                     modifier = Modifier
                         .padding(start = 52.dp)
                         .fillMaxWidth(0.7f)
                         .height(1.dp)
-                        .shadow(
-                            elevation = 6.dp,
-                            shape = RoundedCornerShape(22.dp),
-                            ambientColor = Color.Black,
-                            spotColor = Color.Black
-                        )
                         .background(
-                            color = categoryColor.copy(alpha = 0.5f),
+                            color = categoryColor.copy(alpha = 0.4f),
                             shape = RoundedCornerShape(1.dp)
                         )
                 )

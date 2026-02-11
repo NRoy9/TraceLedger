@@ -37,7 +37,7 @@ fun ExpenseLegend(
             val category = categoryMap[slice.categoryId]
 
             LegendRow(
-                color = category?.color?.let { Color(it) } ?: Color.DarkGray,
+                color = category?.color?.let { Color(it) } ?: MaterialTheme.colorScheme.surfaceVariant,
                 title = category?.name ?: "Unknown",
                 percentage = slice.percentage,
                 amount = slice.amount.toPlainString(),
@@ -71,14 +71,14 @@ private fun LegendRow(
         Text(
             text = title,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
 
         Text(
             text = String.format("%.1f%%", percentage),
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
 
         Spacer(Modifier.width(12.dp))
@@ -86,7 +86,7 @@ private fun LegendRow(
         Text(
             text = CurrencyFormatter.format(amount, currency),
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
     }
 }

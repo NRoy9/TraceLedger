@@ -35,6 +35,7 @@ import com.greenicephoenix.traceledger.feature.statistics.StatisticsViewModel
 import com.greenicephoenix.traceledger.feature.transactions.TransactionsViewModel
 import com.greenicephoenix.traceledger.feature.transactions.TransactionsViewModelFactory
 import androidx.navigation.compose.navigation
+import com.greenicephoenix.traceledger.feature.about.AboutScreen
 import com.greenicephoenix.traceledger.feature.statistics.CashflowScreen
 import com.greenicephoenix.traceledger.feature.budgets.BudgetsScreen
 import com.greenicephoenix.traceledger.feature.budgets.AddEditBudgetScreen
@@ -48,7 +49,8 @@ import com.greenicephoenix.traceledger.feature.budgets.BudgetsViewModelFactory
 @Composable
 fun TraceLedgerNavGraph(
     navController: NavHostController,
-    snackbarHostState: SnackbarHostState
+    snackbarHostState: SnackbarHostState,
+    isLightTheme: Boolean
 ) {
 
     val context = LocalContext.current
@@ -471,6 +473,7 @@ fun TraceLedgerNavGraph(
 
             CategoriesScreen(
                 categories = categories,
+                isLightTheme = isLightTheme,
                 onBack = { navController.popBackStack() },
                 onAddCategory = {
                     navController.navigate(Routes.ADD_CATEGORY)
@@ -569,6 +572,14 @@ fun TraceLedgerNavGraph(
                 onBack = { navController.popBackStack() }
             )
         }
+
+        /* ---------------- ABOUT ---------------- */
+        composable(Routes.ABOUT) {
+            AboutScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
 
     }
 }

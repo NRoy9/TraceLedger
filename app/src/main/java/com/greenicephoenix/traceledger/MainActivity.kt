@@ -25,6 +25,12 @@ import com.greenicephoenix.traceledger.core.ui.theme.TraceLedgerTheme
 import com.greenicephoenix.traceledger.core.currency.CurrencyManager
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
+import com.greenicephoenix.traceledger.core.ui.theme.ThemeManager
+import com.greenicephoenix.traceledger.core.ui.theme.ThemeMode
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowInsetsControllerCompat
 
 class MainActivity : ComponentActivity() {
 
@@ -40,7 +46,27 @@ class MainActivity : ComponentActivity() {
                 CurrencyManager.init(applicationContext)
             }
 
-            TraceLedgerTheme {
+            val context = LocalContext.current
+
+            val themeMode by ThemeManager
+                .themeModeFlow(context)
+                .collectAsState(initial = ThemeMode.DARK)
+
+            val view = LocalView.current
+
+            LaunchedEffect(themeMode) {
+                val window = this@MainActivity.window
+                val controller = WindowInsetsControllerCompat(window, view)
+
+                // Light theme → dark icons
+                // Dark theme → light icons
+                controller.isAppearanceLightStatusBars =
+                    themeMode == ThemeMode.LIGHT
+            }
+
+            TraceLedgerTheme(
+                themeMode = themeMode
+            ) {
 
                 val navController = rememberNavController()
                 // DO NOT read back stack before NavHost is attached
@@ -96,7 +122,8 @@ class MainActivity : ComponentActivity() {
                     ) {
                         TraceLedgerNavGraph(
                             navController = navController,
-                            snackbarHostState = snackbarHostState
+                            snackbarHostState = snackbarHostState,
+                            isLightTheme = themeMode == ThemeMode.LIGHT
                         )
                         // SAFELY observe route AFTER graph is attached
                         val backStackEntry by navController.currentBackStackEntryAsState()

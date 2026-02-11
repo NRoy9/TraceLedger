@@ -46,7 +46,7 @@ fun AccountsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
     ) {
 
         // ================= HEADER =================
@@ -78,7 +78,10 @@ fun AccountsScreen(
                 onDismissRequest = { accountPendingDeletion = null },
 
                 title = {
-                    Text("Delete account?")
+                    Text(
+                        text = "Delete account?",
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 },
 
                 text = {
@@ -123,11 +126,17 @@ fun AccountsScreen(
             onDismissRequest = { deleteBlockedReason = null },
 
             title = {
-                Text("Cannot delete account")
+                Text(
+                    text= "Cannot delete account",
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             },
 
             text = {
-                Text(deleteBlockedReason!!)
+                Text(
+                    text=deleteBlockedReason!!,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             },
 
             confirmButton = {
@@ -151,7 +160,7 @@ private fun AccountsHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
         Row(
@@ -161,7 +170,7 @@ private fun AccountsHeader(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
-                    tint = Color.White
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
             }
 
@@ -170,13 +179,13 @@ private fun AccountsHeader(
             ) {
                 Text(
                     text = "ACCOUNTS",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = "COUNT : $vaultCount",
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                     style = MaterialTheme.typography.labelSmall
                 )
             }
@@ -185,7 +194,7 @@ private fun AccountsHeader(
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Add Account",
-                    tint = Color.White
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -209,7 +218,7 @@ private fun AccountRowCard(
             },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF141414)
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Row(
@@ -230,7 +239,7 @@ private fun AccountRowCard(
                 Icon(
                     imageVector = Icons.Default.AccountBalance,
                     contentDescription = null,
-                    tint = Color.Black
+                    tint = MaterialTheme.colorScheme.onPrimary
                 )
             }
 
@@ -242,13 +251,13 @@ private fun AccountRowCard(
             ) {
                 Text(
                     text = account.name.uppercase(),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = "${account.type.name} · STATUS: ACTIVE",
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     style = MaterialTheme.typography.labelSmall
                 )
             }
@@ -264,14 +273,14 @@ private fun AccountRowCard(
                         account.balance.toPlainString(),
                         currency
                     ),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold
                 )
 
                 Text(
                     text = "AVAILABLE",
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     style = MaterialTheme.typography.labelSmall
                 )
             }

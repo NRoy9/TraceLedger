@@ -12,10 +12,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.greenicephoenix.traceledger.core.navigation.Routes
-import com.greenicephoenix.traceledger.core.ui.theme.NothingRed
 
 @Composable
 fun BottomBar(
@@ -24,63 +22,85 @@ fun BottomBar(
     onAddTransaction: () -> Unit
 ) {
     NavigationBar(
-        containerColor = Color(0xFF141414)
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 6.dp
     ) {
 
         val itemColors = NavigationBarItemDefaults.colors(
-            selectedIconColor = NothingRed,
+            selectedIconColor = MaterialTheme.colorScheme.primary,
             unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            indicatorColor = NothingRed.copy(alpha = 0.15f)
+            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
         )
 
-        // 1️⃣ DASHBOARD
+        // DASHBOARD
         NavigationBarItem(
             selected = currentRoute == Routes.DASHBOARD,
             onClick = { onNavigate(Routes.DASHBOARD) },
-            icon = { Icon(Icons.Default.Home, contentDescription = "Dashboard") },
+            icon = {
+                Icon(
+                    Icons.Default.Home,
+                    contentDescription = "Dashboard"
+                )
+            },
             colors = itemColors
         )
 
-        // 2️⃣ TRANSACTIONS
+        // TRANSACTIONS
         NavigationBarItem(
             selected = currentRoute == Routes.TRANSACTIONS,
             onClick = { onNavigate(Routes.TRANSACTIONS) },
-            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Transactions") },
+            icon = {
+                Icon(
+                    Icons.AutoMirrored.Filled.List,
+                    contentDescription = "Transactions"
+                )
+            },
             colors = itemColors
         )
 
-        // 3️⃣ CENTER ADD TRANSACTION BUTTON (RED)
+        // CENTER FAB STYLE ADD BUTTON
         Box(
             modifier = Modifier
                 .size(56.dp)
-                //.offset(y = (-8 ).dp) // lift above bar
-                .shadow(8.dp, CircleShape)
-                .background(NothingRed, CircleShape)
+                .shadow(6.dp, CircleShape)
+                .background(
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = CircleShape
+                )
                 .clickable { onAddTransaction() },
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = "Add Transaction",
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(28.dp)
             )
         }
 
-        // 4️⃣ STATISTICS
+        // STATISTICS
         NavigationBarItem(
-            //selected = currentRoute?.startsWith(Routes.STATISTICS) == true,
             selected = currentRoute?.startsWith(Routes.STATISTICS) == true,
             onClick = { onNavigate(Routes.STATISTICS) },
-            icon = { Icon(Icons.Default.BarChart, contentDescription = "Statistics") },
+            icon = {
+                Icon(
+                    Icons.Default.BarChart,
+                    contentDescription = "Statistics"
+                )
+            },
             colors = itemColors
         )
 
-        // 5️⃣ SETTINGS
+        // SETTINGS
         NavigationBarItem(
             selected = currentRoute == Routes.SETTINGS,
             onClick = { onNavigate(Routes.SETTINGS) },
-            icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+            icon = {
+                Icon(
+                    Icons.Default.Settings,
+                    contentDescription = "Settings"
+                )
+            },
             colors = itemColors
         )
     }

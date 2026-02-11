@@ -26,6 +26,8 @@ fun ExpenseDonutChart(
         return
     }
 
+    val fallbackColor = MaterialTheme.colorScheme.surfaceVariant
+
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center
@@ -46,7 +48,7 @@ fun ExpenseDonutChart(
                     categoryMap[slice.categoryId]
                         ?.color
                         ?.let { Color(it) }
-                        ?: Color.DarkGray
+                        ?: fallbackColor
 
                 drawArc(
                     color = color,
@@ -65,12 +67,12 @@ fun ExpenseDonutChart(
             Text(
                 text = "EXPENSE",
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             Text(
                 text = "BREAKDOWN",
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -85,7 +87,7 @@ private fun EmptyExpenseChartPlaceholder() {
         Text(
             text = "No expense data",
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
     }
 }

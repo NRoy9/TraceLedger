@@ -21,6 +21,9 @@ fun MonthSelector(
     onPrevious: () -> Unit,
     onNext: () -> Unit
 ) {
+
+    val onSurface = MaterialTheme.colorScheme.onSurface
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -30,7 +33,7 @@ fun MonthSelector(
         Text(
             text = "‹",
             style = MaterialTheme.typography.headlineSmall,
-            color = Color.White,
+            color = onSurface,
             modifier = Modifier
                 .clickable { onPrevious() }
                 .padding(8.dp)
@@ -39,13 +42,13 @@ fun MonthSelector(
         Text(
             text = month.format(monthFormatter).uppercase(),
             style = MaterialTheme.typography.labelLarge,
-            color = Color.White
+            color = onSurface
         )
 
         Text(
             text = "›",
             style = MaterialTheme.typography.headlineSmall,
-            color = Color.White,
+            color = onSurface,
             modifier = Modifier
                 .clickable { onNext() }
                 .padding(8.dp)

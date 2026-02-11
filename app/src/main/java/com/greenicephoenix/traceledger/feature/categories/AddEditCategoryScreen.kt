@@ -26,6 +26,7 @@ import com.greenicephoenix.traceledger.domain.model.CategoryUiModel
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.ui.graphics.luminance
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,13 +67,30 @@ fun AddEditCategoryScreen(
         derivedStateOf { name.isNotBlank() }
     }
 
+    val isLightTheme =
+        MaterialTheme.colorScheme.background.luminance() > 0.5f
+
+    val cardGradientColors =
+        if (isLightTheme) {
+            listOf(
+                MaterialTheme.colorScheme.surface,
+                MaterialTheme.colorScheme.surface
+            )
+        } else {
+            listOf(
+                Color(0xFF1A1A1A),
+                Color(0xFF0F0F0F)
+            )
+        }
+
+
     Scaffold { padding ->
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black)
-                //.padding(padding)
+                .background(MaterialTheme.colorScheme.background)
+            //.padding(padding)
         ) {
 
             // ================= HEADER =================
@@ -88,14 +106,14 @@ fun AddEditCategoryScreen(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Cancel",
-                        tint = Color.White
+                        tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
 
                 Text(
                     text = if (isEditMode) "Edit Category" else "Add Category",
                     modifier = Modifier.weight(1f),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     style = MaterialTheme.typography.titleMedium
                 )
 
@@ -127,14 +145,14 @@ fun AddEditCategoryScreen(
             HorizontalDivider(
                 Modifier,
                 DividerDefaults.Thickness,
-                color = Color.White.copy(alpha = 0.1f)
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.12f)
             )
 
             // ================= CONTENT =================
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black),
+                    .background(MaterialTheme.colorScheme.background),
                 contentAlignment = Alignment.TopCenter
             ) {
                 Card(
@@ -151,12 +169,7 @@ fun AddEditCategoryScreen(
                     Box(
                         modifier = Modifier
                             .background(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color(0xFF1A1A1A),
-                                        Color(0xFF0F0F0F)
-                                    )
-                                ),
+                                brush = Brush.verticalGradient(cardGradientColors),
                                 shape = RoundedCornerShape(28.dp)
                             )
                     ) {
@@ -231,7 +244,10 @@ private fun CategoryTypeSelector(
         modifier = Modifier
             .fillMaxWidth()
             .height(44.dp)
-            .background(Color(0xFF1C1C1C), RoundedCornerShape(22.dp))
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant,
+                RoundedCornerShape(22.dp)
+            )
             .padding(4.dp)
     ) {
         CategoryType.entries.forEach { type ->
@@ -251,7 +267,7 @@ private fun CategoryTypeSelector(
             ) {
                 Text(
                     text = type.name,
-                    color = if (isSelected) NothingRed else Color.Gray
+                    color = if (isSelected) NothingRed else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -289,14 +305,14 @@ private fun IconPicker(
                             if (selected)
                                 NothingRed.copy(alpha = 0.25f)
                             else
-                                Color(0xFF2A2A2A)
+                                MaterialTheme.colorScheme.surfaceVariant
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = CategoryIcons.all[iconId]!!,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -336,7 +352,11 @@ private fun ColorPicker(
                         .background(color)
                         .border(
                             width = if (selected) 3.dp else 1.dp,
-                            color = if (selected) Color.White else Color.Transparent,
+                            color =
+                                if (selected)
+                                    MaterialTheme.colorScheme.onSurface
+                                else
+                                    Color.Transparent,
                             shape = CircleShape
                         )
                 )
@@ -350,6 +370,6 @@ private fun SectionLabel(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelSmall,
-        color = Color.Gray
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
     )
 }

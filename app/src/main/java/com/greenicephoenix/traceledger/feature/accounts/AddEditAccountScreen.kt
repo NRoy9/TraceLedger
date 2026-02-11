@@ -33,6 +33,9 @@ import java.math.BigDecimal
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.ImeAction
 
 /**
  * Add / Edit Account Screen
@@ -104,7 +107,7 @@ fun AddEditAccountScreen(
                 //.fillMaxSize()
                 //.padding(paddingValues)
                 .fillMaxSize()
-                .background(Color.Black)
+                .background(MaterialTheme.colorScheme.background)
         ) {
 
             // =========================
@@ -114,7 +117,7 @@ fun AddEditAccountScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(44.dp)
-                    .background(Color.Black)
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -126,7 +129,7 @@ fun AddEditAccountScreen(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Cancel",
-                        tint = Color.White
+                        tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
 
@@ -135,7 +138,7 @@ fun AddEditAccountScreen(
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onBackground
                 )
 
                 IconButton(
@@ -173,7 +176,7 @@ fun AddEditAccountScreen(
 
             HorizontalDivider(
                 thickness = 0.5.dp,
-                color = Color.White.copy(alpha = 0.15f)
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f)
             )
 
             // =========================
@@ -182,7 +185,7 @@ fun AddEditAccountScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black),
+                    .background(MaterialTheme.colorScheme.background),
                 contentAlignment = Alignment.TopCenter
             ) {
                 Card(
@@ -194,7 +197,7 @@ fun AddEditAccountScreen(
                         .fillMaxWidth(),
                     shape = RoundedCornerShape(28.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFF0F0F0F)
+                        containerColor = MaterialTheme.colorScheme.surface
                     ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                 ) {
@@ -254,7 +257,9 @@ private fun AccountTypeSelector(
             .fillMaxWidth()
             .height(48.dp)
             .clip(RoundedCornerShape(24.dp))
-            .background(Color(0xFF3A3A40))
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant
+            )
             .padding(4.dp)
     ) {
         AccountType.entries.forEach { type ->
@@ -274,7 +279,11 @@ private fun AccountTypeSelector(
             ) {
                 Text(
                     text = type.name.replace("_", " "),
-                    color = if (isSelected) NothingRed else Color.White,
+                    color =
+                        if (isSelected)
+                            NothingRed
+                        else
+                            MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                     softWrap = false
@@ -423,7 +432,11 @@ private fun ColorProtocolPicker(
                         .background(color)
                         .border(
                             width = if (selected) 3.dp else 1.dp,
-                            color = if (selected) Color.White else Color.Transparent,
+                            color =
+                                if (selected)
+                                    MaterialTheme.colorScheme.onSurface
+                                else
+                                    Color.Transparent,
                             shape = CircleShape
                         )
                 )
@@ -440,14 +453,17 @@ private fun IncludeInTotalRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFF141414), RoundedCornerShape(16.dp))
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant,
+                RoundedCornerShape(16.dp)
+            )
             .padding(horizontal = 16.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = "Include in totals",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             style = MaterialTheme.typography.bodyMedium
         )
 
@@ -463,7 +479,7 @@ private fun SectionLabel(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelSmall,
-        color = Color.Gray,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
         letterSpacing = 1.2.sp
     )
 }
@@ -475,10 +491,19 @@ private fun BalanceField(
 ) {
     OutlinedTextField(
         value = balance,
-        onValueChange = onBalanceChange,
+        onValueChange = { newValue ->
+            // Allow digits and at most one decimal point
+            if (newValue.matches(Regex("^\\d*(\\.\\d*)?$"))) {
+                onBalanceChange(newValue)
+            }
+        },
         modifier = Modifier.fillMaxWidth(),
         label = { Text("BALANCE") },
-        singleLine = true
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Decimal,
+            imeAction = ImeAction.Done
+        )
     )
 }
 
@@ -518,7 +543,7 @@ private fun CreditCardSection(
         ) {
             Text(
                 text = "OPTIONAL CREDIT CARD DETAILS",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.labelMedium
             )
 

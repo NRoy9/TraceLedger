@@ -81,7 +81,7 @@ fun DashboardScreen(
         columns = GridCells.Fixed(2),
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -92,13 +92,13 @@ fun DashboardScreen(
                 Text(
                     text = "OVERVIEW",
                     style = MaterialTheme.typography.headlineMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onBackground
                 )
 
                 Text(
                     text = "This month",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )
 
             }
@@ -121,7 +121,7 @@ fun DashboardScreen(
             Card(
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFF121212)
+                    containerColor = MaterialTheme.colorScheme.surface
                 ),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -132,7 +132,7 @@ fun DashboardScreen(
                     Text(
                         text = "TOTAL BALANCE",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                     )
                     Text(
                         text = CurrencyFormatter.format(
@@ -140,7 +140,7 @@ fun DashboardScreen(
                             currency = currency
                         ),
                         style = MaterialTheme.typography.displaySmall,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onBackground
                     )
 
                     Row(
@@ -168,7 +168,7 @@ fun DashboardScreen(
             Card(
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFF121212)
+                    containerColor = MaterialTheme.colorScheme.surface
                 ),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -178,7 +178,7 @@ fun DashboardScreen(
                     Text(
                         text = "NET BALANCE",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                     )
                     Text(
                         text = CurrencyFormatter.format(
@@ -187,9 +187,9 @@ fun DashboardScreen(
                         ),
                         style = MaterialTheme.typography.titleLarge,
                         color = if (monthlyNet >= BigDecimal.ZERO)
-                            Color(0xFF4CAF50)   // green
+                            Color(0xFF4CAF50)
                         else
-                            NothingRed         // red
+                            NothingRed
                     )
                 }
             }
@@ -209,7 +209,7 @@ fun DashboardScreen(
             } else {
                 Text(
                     text = "Set monthly budgets to control spending",
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -230,12 +230,12 @@ fun DashboardScreen(
                 Text(
                     text = "MY ACCOUNTS",
                     style = MaterialTheme.typography.labelMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
                     text = "SEE ALL",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                     modifier = Modifier.clickable {
                         onNavigate(Routes.ACCOUNTS)
                     }
@@ -278,7 +278,7 @@ private fun AddAccountCard(onClick: () -> Unit) {
             .clickable { onClick() },
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF141414)
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Box(
@@ -307,7 +307,7 @@ fun DashboardAccountCard(
             .clickable { onClick() },
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF141414)
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Column(
@@ -333,7 +333,7 @@ fun DashboardAccountCard(
 
                 Text(
                     text = account.name,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )
@@ -349,7 +349,7 @@ fun DashboardAccountCard(
                     account.balance.toPlainString(),
                     currency
                 ),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.bodyLarge
             )
 
@@ -370,7 +370,7 @@ fun DashboardAccountCard(
 @Composable
 private fun IncludedBadge(isIncluded: Boolean) {
 
-    val color = if (isIncluded) Color(0xFF4CAF50) else Color(0xFF757575)
+    val color = if (isIncluded) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
     val icon = if (isIncluded) Icons.Default.Check else Icons.Default.VisibilityOff
 
     Box(
@@ -411,7 +411,7 @@ fun MonthlyBudgetCard(
     Card(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF121212)
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         modifier = Modifier
             .fillMaxWidth()
@@ -425,7 +425,7 @@ fun MonthlyBudgetCard(
             Text(
                 text = "MONTHLY BUDGET",
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
             )
 
             Text(
@@ -438,7 +438,7 @@ fun MonthlyBudgetCard(
                         currency
                     )}",
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Text(
@@ -447,7 +447,7 @@ fun MonthlyBudgetCard(
                 else
                     "LOAD: 0%",
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
             )
 
             /* ---------- ACCENT PROGRESS LINE ---------- */
@@ -456,7 +456,7 @@ fun MonthlyBudgetCard(
                     .fillMaxWidth()
                     .height(4.dp)
                     .background(
-                        color = Color(0xFF2A2A2A),
+                        MaterialTheme.colorScheme.surfaceVariant,
                         shape = RoundedCornerShape(2.dp)
                     )
             ) {

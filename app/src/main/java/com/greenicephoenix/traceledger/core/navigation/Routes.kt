@@ -20,5 +20,7 @@ object Routes {
     const val EDIT_CATEGORY = "edit_category/{categoryId}"
     const val BUDGETS = "budgets"
     const val ADD_EDIT_BUDGET = "add-edit-budget"
+    const val ABOUT = "about"
+
 
 }

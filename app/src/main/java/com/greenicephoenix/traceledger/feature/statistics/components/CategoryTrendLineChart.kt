@@ -8,7 +8,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -64,6 +63,8 @@ fun CategoryTrendLineChart(
 
     val gridColor =
         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+
+    val trendColor = MaterialTheme.colorScheme.primary
 
     androidx.compose.runtime.key(selectedCategoryId) {
         Canvas(
@@ -177,7 +178,7 @@ fun CategoryTrendLineChart(
                             (entry.total.toFloat() / maxValue.toFloat()) * chartHeight
 
                 drawCircle(
-                    color = Color(0xFF4CAF50),
+                    color = trendColor,
                     radius = 6.dp.toPx(),
                     center = Offset(x, y)
                 )
@@ -206,7 +207,7 @@ fun CategoryTrendLineChart(
                     }
 
                     drawCircle(
-                        color = Color(0xFF4CAF50),
+                        color = trendColor,
                         radius = 4.dp.toPx(),
                         center = Offset(x, y)
                     )
@@ -214,7 +215,7 @@ fun CategoryTrendLineChart(
 
                 drawPath(
                     path = path,
-                    color = Color(0xFF4CAF50),
+                    color = trendColor,
                     style = Stroke(width = 2.dp.toPx())
                 )
 

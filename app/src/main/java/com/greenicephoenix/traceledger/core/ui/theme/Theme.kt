@@ -14,15 +14,32 @@ private val DarkColorScheme = darkColorScheme(
     error = ErrorRed
 )
 
+private val LightColorScheme = lightColorScheme(
+    primary = NothingRed,
+    background = LightBackground,
+    surface = LightSurface,
+    onPrimary = WhitePure,
+    onBackground = LightTextPrimary,
+    onSurface = LightTextPrimary,
+    error = ErrorRed
+)
+
+
 /**
  * Root theme for TraceLedger
  */
 @Composable
 fun TraceLedgerTheme(
+    themeMode: ThemeMode,
     content: @Composable () -> Unit
 ) {
+    val colors = when (themeMode) {
+        ThemeMode.DARK -> DarkColorScheme
+        ThemeMode.LIGHT -> LightColorScheme
+    }
+
     MaterialTheme(
-        colorScheme = DarkColorScheme,
+        colorScheme = colors,
         typography = TraceLedgerTypography,
         content = content
     )

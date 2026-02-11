@@ -3,10 +3,12 @@ package com.greenicephoenix.traceledger.feature.settings
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,6 +23,9 @@ import com.greenicephoenix.traceledger.core.export.ExportFormat
 import com.greenicephoenix.traceledger.core.importer.ImportPreview
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
+import com.greenicephoenix.traceledger.core.ui.theme.ThemeManager
+import com.greenicephoenix.traceledger.core.ui.theme.ThemeMode
+
 
 enum class ImportType { JSON, CSV }
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,15 +52,19 @@ fun SettingsScreen(
     var showCurrencySheet by remember { mutableStateOf(false) }
     var showExportSheet by remember { mutableStateOf(false) }
     var showImportSheet by remember { mutableStateOf(false) }
+    var showThemeSheet by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
+    val currentTheme by ThemeManager
+        .themeModeFlow(context)
+        .collectAsState(initial = ThemeMode.DARK)
 
     var pendingExportFormat by remember { mutableStateOf<ExportFormat?>(null) }
     var pendingImportType by remember { mutableStateOf<ImportType?>(null) }
 
     val exportLauncher =
         rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.CreateDocument()
+            contract = CreateDocument("*/*")
         ) { uri ->
             // User may cancel → uri == null
             if (uri != null && pendingExportFormat != null) {
@@ -107,7 +116,7 @@ fun SettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -115,7 +124,7 @@ fun SettingsScreen(
         Text(
             text = "SETTINGS",
             style = MaterialTheme.typography.headlineMedium,
-            color = Color.White
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -125,6 +134,13 @@ fun SettingsScreen(
             title = "Currency",
             subtitle = "${currentCurrency.code} (${currentCurrency.symbol})",
             onClick = { showCurrencySheet = true }
+        )
+
+        // ───────── Theme ─────────
+        SettingsItem(
+            title = "Theme",
+            subtitle = "Dark / Light",
+            onClick = { showThemeSheet = true }
         )
 
         // ───────── Categories (existing) ─────────
@@ -155,6 +171,14 @@ fun SettingsScreen(
             onClick = { showImportSheet = true }
         )
 
+        // ───────── About ─────────
+        SettingsItem(
+            title = "About",
+            subtitle = "Version, changelog, and app info",
+            onClick = { onNavigate(Routes.ABOUT) }
+        )
+
+
     }
 
     if (showCurrencySheet) {
@@ -182,13 +206,13 @@ fun SettingsScreen(
                 Text(
                     text = "Export data",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Text(
                     text = "Choose an export format",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(Modifier.height(8.dp))
@@ -234,7 +258,7 @@ fun SettingsScreen(
                 Text(
                     text = "Import data",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 ImportOption(
@@ -262,7 +286,7 @@ fun SettingsScreen(
                 Text(
                     text = "CSV import will skip rows with unknown accounts or categories.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
             }
         }
@@ -352,7 +376,7 @@ fun SettingsScreen(
                             color = if (canImport)
                                 MaterialTheme.colorScheme.primary
                             else
-                                Color.Gray
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
                     }
                 }
@@ -360,12 +384,27 @@ fun SettingsScreen(
         }
     }
 
+    if (showThemeSheet) {
+        ThemePickerBottomSheet(
+            selected = currentTheme,
+            onSelect = { mode ->
+                showThemeSheet = false
+                coroutineScope.launch {
+                    ThemeManager.setThemeMode(context, mode)
+                }
+            },
+            onDismiss = { showThemeSheet = false }
+        )
+    }
+
     importProgress?.let { progress ->
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.85f)),
+                .background(
+                    MaterialTheme.colorScheme.background.copy(alpha = 0.85f)
+                ),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -376,45 +415,26 @@ fun SettingsScreen(
 
                 Text(
                     text = "Importing data…",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.titleMedium
                 )
 
                 LinearProgressIndicator(
-                    progress = progress / 100f,
-                    modifier = Modifier.fillMaxWidth()
+                    progress = { progress / 100f },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = ProgressIndicatorDefaults.linearColor,
+                    trackColor = ProgressIndicatorDefaults.linearTrackColor,
+                    strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
                 )
 
                 Text(
                     text = "$progress%",
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     style = MaterialTheme.typography.bodySmall
                 )
             }
         }
     }
-
-//    importPreview?.let { preview ->
-//        if (preview.totalRows > 0) {
-//
-//            Text("Total rows: ${preview.totalRows}")
-//            Text("Will import: ${preview.validRows}")
-//            Text(
-//                text = "Skipped: ${preview.skippedRows}",
-//                color = MaterialTheme.colorScheme.error
-//            )
-//
-//            Spacer(Modifier.height(8.dp))
-//
-//            preview.skippedByReason.forEach { (reason, count) ->
-//                Text(
-//                    text = "• ${reason.name.replace('_', ' ').lowercase()}: $count",
-//                    style = MaterialTheme.typography.bodySmall,
-//                    color = Color.Gray
-//                )
-//            }
-//        }
-//    }
 
     LaunchedEffect(importProgress) {
         if (importProgress != null && importProgress!! >= 100) {
@@ -439,19 +459,24 @@ private fun SettingsItem(
             .fillMaxWidth()
             .clickable { onClick() },
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF141414)
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         shape = MaterialTheme.shapes.medium
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            Text(text = title, color = Color.White)
+            Text(
+                text = title,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
+
         }
     }
 }
@@ -492,13 +517,62 @@ private fun CurrencyPickerBottomSheet(
                         text = "${currency.code} (${currency.symbol})",
                         color = if (isSelected)
                             MaterialTheme.colorScheme.primary
-                        else Color.White
+                        else MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ThemePickerBottomSheet(
+    selected: ThemeMode,
+    onSelect: (ThemeMode) -> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            ThemeMode.entries.forEach { mode ->
+                val isSelected = mode == selected
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            if (isSelected)
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                            else Color.Transparent,
+                            shape = MaterialTheme.shapes.medium
+                        )
+                        .clickable { onSelect(mode) }
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = when (mode) {
+                            ThemeMode.DARK -> "Dark"
+                            ThemeMode.LIGHT -> "Light"
+                        },
+                        color = if (isSelected)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+    }
+}
+
 
 @Composable
 private fun ExportOption(
@@ -511,7 +585,7 @@ private fun ExportOption(
             .fillMaxWidth()
             .clickable { onClick() },
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1A1A1A)
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Column(
@@ -520,13 +594,13 @@ private fun ExportOption(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(Modifier.height(4.dp))
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
         }
     }
@@ -555,7 +629,7 @@ private fun ImportOption(
             .fillMaxWidth()
             .clickable { onClick() },
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1A1A1A)
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Column(
@@ -564,13 +638,13 @@ private fun ImportOption(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(Modifier.height(4.dp))
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
         }
     }

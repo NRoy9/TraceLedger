@@ -71,8 +71,7 @@ fun AddTransactionScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black)
-                //.padding(padding)
+                .background(MaterialTheme.colorScheme.background)
         ) {
 
             // ───────── HEADER ─────────
@@ -85,14 +84,14 @@ fun AddTransactionScreen(
             ) {
 
                 IconButton(onClick = onCancel) {
-                    Icon(Icons.Default.Close, null, tint = Color.White)
+                    Icon(Icons.Default.Close, null, tint = MaterialTheme.colorScheme.onBackground)
                 }
 
                 Text(
                     text = if (isEditMode) "Edit Transaction" else "Add Transaction",
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     style = MaterialTheme.typography.titleMedium
                 )
 
@@ -103,19 +102,24 @@ fun AddTransactionScreen(
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Save",
-                        tint = if (state.canSave) Color.White else Color.Gray
+                        tint = if (state.canSave)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
                     )
                 }
             }
 
-            HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f)
+            )
 
             Box(
                 modifier = Modifier
                     .padding(16.dp)
                     .fillMaxSize()
                     .background(
-                        color = Color(0xFF141414),
+                        color = MaterialTheme.colorScheme.surface,
                         shape = RoundedCornerShape(24.dp)
                     )
                     .padding(16.dp)
@@ -137,13 +141,13 @@ fun AddTransactionScreen(
             title = {
                 Text(
                     text = "Delete transaction?",
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             },
             text = {
                 Text(
                     text = "This action cannot be undone.",
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             },
             confirmButton = {
@@ -165,11 +169,11 @@ fun AddTransactionScreen(
                 ) {
                     Text(
                         text = "Cancel",
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             },
-            containerColor = Color(0xFF121212)
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 }
@@ -303,7 +307,7 @@ private fun TransactionForm(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .background(
-                                        color = Color(0xFF101010),
+                                        color = MaterialTheme.colorScheme.surface,
                                         shape = RoundedCornerShape(16.dp)
                                     )
                                     .padding(12.dp),
@@ -334,8 +338,8 @@ private fun TransactionForm(
                                 ) {
                                     Text(
                                         text = "↓",
-                                        style = MaterialTheme.typography.headlineMedium, // bigger arrow
-                                        color = Color.White.copy(alpha = 0.6f)          // higher contrast, still subtle
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                     )
                                 }
 
@@ -388,7 +392,7 @@ private fun TransactionForm(
                 HorizontalDivider(
                     Modifier,
                     DividerDefaults.Thickness,
-                    color = Color.White.copy(alpha = 0.1f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -397,11 +401,11 @@ private fun TransactionForm(
                     onClick = onDeleteClick,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color.White
+                        contentColor = MaterialTheme.colorScheme.onBackground
                     ),
                     border = BorderStroke(
                         width = 1.dp,
-                        color = Color(0xFFE53935) // soft red
+                        color = Color(0xFFE53935)
                     ),
                     shape = RoundedCornerShape(14.dp)
                 ) {
@@ -424,7 +428,10 @@ private fun TransactionTypeSelector(
         modifier = Modifier
             .fillMaxWidth()
             .height(44.dp)
-            .background(Color(0xFF1C1C1C), RoundedCornerShape(22.dp))
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant,
+                RoundedCornerShape(22.dp)
+            )
             .padding(4.dp)
     ) {
         TransactionType.entries.forEach { type ->
@@ -434,7 +441,7 @@ private fun TransactionTypeSelector(
                     .weight(1f)
                     .fillMaxHeight()
                     .background(
-                        if (isSelected) NothingRed.copy(alpha = 0.25f)
+                        if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                         else Color.Transparent,
                         RoundedCornerShape(18.dp)
                     )
@@ -443,7 +450,11 @@ private fun TransactionTypeSelector(
             ) {
                 Text(
                     text = type.name,
-                    color = if (isSelected) NothingRed else Color.Gray
+                    color =
+                        if (isSelected)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
         }
@@ -564,7 +575,7 @@ fun AccountSelector(
                 imageVector = Icons.Default.ArrowDropDown,
                 contentDescription = null,
                 modifier = Modifier.rotate(arrowRotation),
-                tint = Color.Gray
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
     )
@@ -610,7 +621,10 @@ fun AccountSelector(
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(Modifier.width(14.dp))
-                        Text(account.name, color = Color.White)
+                        Text(
+                            text = account.name,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
             }
@@ -666,7 +680,7 @@ fun CategorySelector(
                 imageVector = Icons.Default.ArrowDropDown,
                 contentDescription = null,
                 modifier = Modifier.rotate(arrowRotation),
-                tint = Color.Gray
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
     )
@@ -713,7 +727,11 @@ fun CategorySelector(
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(Modifier.width(14.dp))
-                        Text(category.name, color = Color.White)
+                        Text(
+                            text = category.name,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+
                     }
                 }
             }
@@ -813,7 +831,7 @@ private fun AmountInput(
                         currency
                     ),
                     style = MaterialTheme.typography.displaySmall,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -822,7 +840,7 @@ private fun AmountInput(
                     modifier = Modifier
                         .width(64.dp)
                         .height(1.dp)
-                        .background(Color.White.copy(alpha = 0.2f))
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
                 )
             }
         }

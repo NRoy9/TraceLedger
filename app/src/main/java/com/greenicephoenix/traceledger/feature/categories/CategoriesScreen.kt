@@ -26,6 +26,7 @@ import com.greenicephoenix.traceledger.core.ui.theme.NothingRed
 @Composable
 fun CategoriesScreen(
     categories: List<CategoryUiModel>,
+    isLightTheme: Boolean,
     onBack: () -> Unit,
     onAddCategory: () -> Unit,
     onCategoryClick: (CategoryUiModel) -> Unit
@@ -39,7 +40,7 @@ fun CategoriesScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
     ) {
 
         // ================= HEADER =================
@@ -61,13 +62,17 @@ fun CategoriesScreen(
 
             // ADD CATEGORY CARD
             item {
-                AddCategoryCard(onClick = onAddCategory)
+                AddCategoryCard(
+                    isLightTheme = isLightTheme,
+                    onClick = onAddCategory
+                )
             }
 
             // CATEGORY CARDS
             items(filteredCategories) { category ->
                 CategoryCard(
                     category = category,
+                    isLightTheme = isLightTheme,
                     onClick = { onCategoryClick(category) }
                 )
             }
@@ -99,14 +104,14 @@ private fun CategoriesHeader(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
-                    tint = Color.White
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
             }
 
             Text(
                 text = "CATEGORIES",
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(start = 8.dp)
             )
         }
@@ -129,7 +134,10 @@ private fun CategoryTypeSelector(
         modifier = Modifier
             .fillMaxWidth()
             .height(44.dp)
-            .background(Color(0xFF1C1C1C), RoundedCornerShape(22.dp))
+            .background(
+                MaterialTheme.colorScheme.surface,
+                RoundedCornerShape(22.dp)
+            )
             .padding(4.dp)
     ) {
         CategoryType.entries.forEach { type ->
@@ -149,7 +157,10 @@ private fun CategoryTypeSelector(
             ) {
                 Text(
                     text = type.name,
-                    color = if (selected) NothingRed else Color.Gray
+                    color = if (selected)
+                        NothingRed
+                    else
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
         }
@@ -157,14 +168,33 @@ private fun CategoryTypeSelector(
 }
 
 @Composable
-private fun AddCategoryCard(onClick: () -> Unit) {
+private fun AddCategoryCard(
+    isLightTheme: Boolean,
+    onClick: () -> Unit
+) {
+
+    // ✅ ADD THIS BLOCK — INSIDE THE COMPOSABLE
+    val baseSurface = MaterialTheme.colorScheme.surface
+    val gradientColors =
+        if (isLightTheme) {
+            listOf(
+                baseSurface,
+                baseSurface
+            )
+        } else {
+            listOf(
+                Color(0xFF1A1A1A),
+                Color(0xFF0F0F0F)
+            )
+        }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(60.dp)
             .clickable { onClick() },
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF141414)
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         shape = RoundedCornerShape(20.dp)
     ) {
@@ -172,15 +202,9 @@ private fun AddCategoryCard(onClick: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF1A1A1A), // top highlight
-                            Color(0xFF0F0F0F)  // base
-                        )
-                    ),
+                    brush = Brush.verticalGradient(gradientColors),
                     shape = RoundedCornerShape(18.dp)
                 ),
-
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -196,8 +220,23 @@ private fun AddCategoryCard(onClick: () -> Unit) {
 @Composable
 private fun CategoryCard(
     category: CategoryUiModel,
+    isLightTheme: Boolean,
     onClick: () -> Unit
 ) {
+    val baseSurface = MaterialTheme.colorScheme.surface
+    val gradientColors =
+        if (isLightTheme) {
+            listOf(
+                baseSurface,
+                baseSurface
+            )
+        } else {
+            listOf(
+                Color(0xFF1A1A1A),
+                Color(0xFF0F0F0F)
+            )
+        }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -213,12 +252,7 @@ private fun CategoryCard(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF1A1A1A), // top highlight
-                            Color(0xFF0F0F0F)  // base
-                        )
-                    ),
+                    brush = Brush.verticalGradient(gradientColors),
                     shape = RoundedCornerShape(18.dp)
                 )
         ) {
@@ -245,7 +279,7 @@ private fun CategoryCard(
 
                     Text(
                         text = category.name,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }

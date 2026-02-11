@@ -34,3 +34,16 @@ val NothingRed = Color(0xFFE53935)
 // Status colors
 val SuccessGreen = Color(0xFF4CAF50)
 val ErrorRed = NothingRed
+
+/* -------------------------------------------------------------------------- */
+/* Light Theme Colors */
+/* -------------------------------------------------------------------------- */
+
+val LightBackground = Color(0xFFF7F7F7)
+val LightSurface = Color(0xFFFFFFFF)
+val LightSurfaceAlt = Color(0xFFEFEFEF)
+
+// Text (light)
+val LightTextPrimary = Color(0xFF0F0F0F)
+val LightTextSecondary = Color(0xFF5F5F5F)
+val LightTextDisabled = Color(0xFF9E9E9E)

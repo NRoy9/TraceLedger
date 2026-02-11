@@ -37,7 +37,7 @@ fun IncomeLegend(
             val category = categoryMap[slice.categoryId]
 
             LegendRow(
-                color = category?.color?.let { Color(it) } ?: Color.DarkGray,
+                color = category?.color?.let { Color(it) } ?: MaterialTheme.colorScheme.surfaceVariant,
                 title = category?.name ?: "Unknown",
                 percentage = slice.percentage,
                 amount = slice.amount.toPlainString(),
@@ -55,6 +55,8 @@ private fun LegendRow(
     amount: String,
     currency: Currency
 ) {
+    val onSurface = MaterialTheme.colorScheme.onSurface
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -71,14 +73,14 @@ private fun LegendRow(
         Text(
             text = title,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White,
+            color = onSurface,
             modifier = Modifier.weight(1f)
         )
 
         Text(
             text = String.format("%.1f%%", percentage),
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
+            color = onSurface.copy(alpha = 0.6f)
         )
 
         Spacer(Modifier.width(12.dp))
@@ -86,7 +88,7 @@ private fun LegendRow(
         Text(
             text = CurrencyFormatter.format(amount, currency),
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
+            color = onSurface.copy(alpha = 0.6f)
         )
     }
 }

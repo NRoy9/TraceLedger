@@ -1,0 +1,8 @@
+Version 0.2.0
+• Budgets support
+• Improved import preview
+• UI stability improvements
+
+Version 0.1.0
+• Initial release
+• Accounts, categories, transactions

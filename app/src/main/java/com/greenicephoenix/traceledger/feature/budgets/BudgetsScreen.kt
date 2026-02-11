@@ -63,7 +63,7 @@ fun BudgetsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black)
+                .background(MaterialTheme.colorScheme.background)
         ) {
 
             MonthSelector(
@@ -74,7 +74,7 @@ fun BudgetsScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black)
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -99,7 +99,7 @@ fun BudgetsScreen(
 
                             Text(
                                 text = "No budgets set for this month.\nTap + to create one.",
-                                color = Color.Gray,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                 style = MaterialTheme.typography.bodySmall,
                                 textAlign = TextAlign.Center
                             )
@@ -134,7 +134,8 @@ private fun BudgetItemCard(
             .clickable { onClick() },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = BudgetColors.cardBackground(status.state)
+            //containerColor = BudgetColors.cardBackground(status.state)
+            containerColor = MaterialTheme.colorScheme.surface
         )
 
     ) {
@@ -162,7 +163,7 @@ private fun BudgetItemCard(
 
                 Text(
                     text = category.name,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -170,7 +171,7 @@ private fun BudgetItemCard(
             /* ---------- AMOUNT ---------- */
             Text(
                 text = "Used: ${status.used} of ${status.limit}",
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 style = MaterialTheme.typography.bodySmall
             )
 
@@ -210,14 +211,14 @@ private fun MonthSelector(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
-                tint = Color.White
+                tint = MaterialTheme.colorScheme.onSurface
             )
         }
 
         Text(
             text = "Budgets",
             modifier = Modifier.weight(1f),
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.titleMedium
         )
     }
@@ -238,13 +239,13 @@ private fun MonthSelector(
             Icon(
                 imageVector = Icons.Default.ChevronLeft,
                 contentDescription = "Previous Month",
-                tint = Color.White
+                tint = MaterialTheme.colorScheme.onSurface
             )
         }
 
         Text(
             text = month.month.name.uppercase() + " " + month.year,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.bodyMedium
         )
 
@@ -254,7 +255,7 @@ private fun MonthSelector(
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = "Next Month",
-                tint = Color.White
+                tint = MaterialTheme.colorScheme.onSurface
             )
         }
     }

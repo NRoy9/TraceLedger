@@ -5,9 +5,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.greenicephoenix.traceledger.feature.budgets.domain.BudgetState
 import com.greenicephoenix.traceledger.feature.budgets.ui.BudgetColors
@@ -27,7 +27,10 @@ fun BudgetAccentProgress(
         modifier = modifier
             .fillMaxWidth()
             .height(4.dp)
-            .background(Color(0xFF2A2A2A), RoundedCornerShape(2.dp))
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant,
+                RoundedCornerShape(2.dp)
+            )
     ) {
         Box(
             modifier = Modifier

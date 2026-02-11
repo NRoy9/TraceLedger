@@ -23,6 +23,7 @@ import java.time.format.DateTimeFormatter
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.ui.Alignment
 
 
 private val dateFormatter = DateTimeFormatter.ofPattern("dd MMM")
@@ -48,7 +49,7 @@ fun CashflowScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black),
+            .background(MaterialTheme.colorScheme.background),
         contentPadding = PaddingValues(24.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
@@ -74,7 +75,7 @@ fun CashflowScreen(
                 Text(
                     text = "No cashflow data for this month",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )
             }
         } else {
@@ -181,10 +182,10 @@ private fun CashflowRow(
         Text(
             text = date,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White
+            color = MaterialTheme.colorScheme.onBackground
         )
 
-        Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
+        Column(horizontalAlignment = Alignment.End) {
             Text(
                 text = "+ $income",
                 style = MaterialTheme.typography.bodySmall,
