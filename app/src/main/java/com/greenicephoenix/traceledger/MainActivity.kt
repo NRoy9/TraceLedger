@@ -29,8 +29,8 @@ import com.greenicephoenix.traceledger.core.ui.components.BottomBar
 import com.greenicephoenix.traceledger.core.ui.theme.ThemeManager
 import com.greenicephoenix.traceledger.core.ui.theme.ThemeMode
 import com.greenicephoenix.traceledger.core.ui.theme.TraceLedgerTheme
-import com.greenicephoenix.traceledger.core.util.ChangelogParser
-import com.greenicephoenix.traceledger.feature.about.WhatsNewSheet
+import com.greenicephoenix.traceledger.core.util.ChangelogData
+import com.greenicephoenix.traceledger.feature.about.WhatsNewDialog
 import com.greenicephoenix.traceledger.feature.onboarding.OnboardingScreen
 import com.greenicephoenix.traceledger.feature.update.UpdateDialog
 import com.greenicephoenix.traceledger.feature.update.UpdateInfo
@@ -85,6 +85,7 @@ class MainActivity : ComponentActivity() {
         // Read persisted state synchronously before first frame — prevents flash
         val initialTheme          = runBlocking { ThemeManager.themeModeFlow(applicationContext).first() }
         val initialOnboardingDone = runBlocking { settingsStore.onboardingComplete.first() ?: false }
+        val initialLastSeenVersion = runBlocking { settingsStore.lastSeenVersion.first() }
 
         lifecycleScope.launch {
             CurrencyManager.init(applicationContext)
@@ -129,18 +130,8 @@ class MainActivity : ComponentActivity() {
             }
 
             // ── Changelog / What's New sheet ──────────────────────────────────
-            val lastSeenVersion by settingsStore.lastSeenVersion.collectAsState(initial = null)
-            var hasCheckedVersion by remember { mutableStateOf(false) }
-            var showWhatsNew      by remember { mutableStateOf(false) }
-
-            LaunchedEffect(lastSeenVersion) {
-                if (!hasCheckedVersion) { hasCheckedVersion = true; return@LaunchedEffect }
-                when (lastSeenVersion) {
-                    null, BuildConfig.VERSION_NAME -> {
-                        if (lastSeenVersion == null) showWhatsNew = true
-                    }
-                    else -> showWhatsNew = true
-                }
+            var showWhatsNew by remember {
+                mutableStateOf(initialLastSeenVersion != BuildConfig.VERSION_NAME)
             }
 
             // ── Update Checker ────────────────────────────────────────────────
@@ -178,14 +169,10 @@ class MainActivity : ComponentActivity() {
 
                 // ── WHAT'S NEW SHEET ──────────────────────────────────────────
                 if (showWhatsNew) {
-                    val allVersions  = remember { ChangelogParser.loadVersioned(context) }
-                    val currentEntry = allVersions.firstOrNull {
-                        it.version == BuildConfig.VERSION_NAME
-                    }
-
-                    if (currentEntry != null) {
-                        WhatsNewSheet(
-                            changelog = currentEntry,
+                    val entry = remember { ChangelogData.forVersion(BuildConfig.VERSION_NAME) }
+                    if (entry != null) {
+                        WhatsNewDialog(
+                            entry     = entry,
                             onDismiss = {
                                 showWhatsNew = false
                                 lifecycleScope.launch {
@@ -193,6 +180,12 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         )
+                    } else {
+                        // No changelog entry for this version — dismiss silently
+                        LaunchedEffect(Unit) {
+                            settingsStore.setLastSeenVersion(BuildConfig.VERSION_NAME)
+                            showWhatsNew = false
+                        }
                     }
                 }
 

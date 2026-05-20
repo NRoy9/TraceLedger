@@ -102,7 +102,8 @@ class AppContainer(private val context: Context) {
             transactionRepository = transactionRepository,
             budgetRepository      = budgetRepository,
             accountRepository     = accountRepository,
-            recurringRepository   = recurringTransactionRepository
+            recurringRepository   = recurringTransactionRepository,
+            categoryRepository    = categoryRepository               // ADD
         )
     }
 

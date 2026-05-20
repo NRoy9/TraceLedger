@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.greenicephoenix.traceledger.core.repository.TransactionRepository
 import com.greenicephoenix.traceledger.domain.model.TransactionType
-import com.greenicephoenix.traceledger.feature.statistics.model.ChartPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import java.math.BigDecimal
@@ -13,10 +12,7 @@ import java.time.YearMonth
 import com.greenicephoenix.traceledger.feature.budgets.data.BudgetRepository
 import com.greenicephoenix.traceledger.core.repository.AccountRepository
 import com.greenicephoenix.traceledger.core.repository.RecurringTransactionRepository
-import com.greenicephoenix.traceledger.domain.model.AccountUiModel
-import com.greenicephoenix.traceledger.domain.model.TransactionUiModel
-import com.greenicephoenix.traceledger.feature.budgets.data.BudgetEntity
-import java.time.temporal.ChronoUnit
+import com.greenicephoenix.traceledger.core.repository.CategoryRepository
 import kotlin.math.sqrt
 import kotlin.math.pow
 import com.greenicephoenix.traceledger.feature.statistics.model.CalendarDay
@@ -27,7 +23,8 @@ class StatisticsViewModel(
     private val transactionRepository: TransactionRepository,
     private val budgetRepository:      BudgetRepository,
     private val accountRepository:     AccountRepository,
-    private val recurringRepository:   RecurringTransactionRepository
+    private val recurringRepository:   RecurringTransactionRepository,
+    private val categoryRepository:    CategoryRepository
 ) : ViewModel() {
 
     // ── Inner data classes ────────────────────────────────────────────────────
@@ -117,7 +114,7 @@ class StatisticsViewModel(
     )
 
     data class TopSpendDay(
-        val date:  java.time.LocalDate,
+        val date:  LocalDate,
         val total: Double,
         val rank:  Int
     )
@@ -169,7 +166,7 @@ class StatisticsViewModel(
 
     /** Running balance point — one per transaction day */
     data class RunningBalancePoint(
-        val date:    java.time.LocalDate,
+        val date:    LocalDate,
         val balance: Double
     )
 
@@ -214,7 +211,7 @@ class StatisticsViewModel(
         val daysRemaining:            Int,
         val budgetRemaining:          Double,
         val isOnTrack:                Boolean,
-        val spendingSpikes:           List<java.time.LocalDate>  // days with unusually high spend
+        val spendingSpikes:           List<LocalDate>  // days with unusually high spend
     )
 
     /** Recurring transaction summary */
@@ -232,7 +229,7 @@ class StatisticsViewModel(
         val amount:    BigDecimal,
         val type:      String,
         val frequency: String,
-        val nextDate:  java.time.LocalDate?
+        val nextDate:  LocalDate?
     )
 
     // ── Selected month ────────────────────────────────────────────────────────
@@ -416,13 +413,17 @@ class StatisticsViewModel(
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     // ── Budget utilization rings ──────────────────────────────────────────────
-// Combines budgets for the selected month with expense totals per category.
-
+    // Combines budgets for the selected month with expense totals and category names.
     @OptIn(ExperimentalCoroutinesApi::class)
     val budgetRings: StateFlow<List<BudgetRingData>> =
-        _selectedMonth.flatMapLatest { month ->
-            budgetRepository.observeBudgetsForMonth(month)
-        }.combine(expenseByCategory) { budgets, expenseMap ->
+        combine(
+            _selectedMonth.flatMapLatest { month ->
+                budgetRepository.observeBudgetsForMonth(month)
+            },
+            expenseByCategory,
+            categoryRepository.observeCategories() // provides id → name lookup
+        ) { budgets, expenseMap, categories ->
+            val nameMap = categories.associateBy({ it.id }, { it.name })
             budgets.map { budget ->
                 val spent = if (budget.categoryId != null)
                     expenseMap[budget.categoryId] ?: BigDecimal.ZERO
@@ -437,8 +438,8 @@ class StatisticsViewModel(
                 BudgetRingData(
                     budgetId    = budget.id,
                     categoryId  = budget.categoryId,
-                    //label       = budget.name,
-                    label       = budget.categoryId,
+                    // Resolve human-readable name from categories; "Overall" for null categoryId
+                    label       = budget.categoryId?.let { nameMap[it] ?: it } ?: "Overall",
                     spent       = spent,
                     limit       = budget.limitAmount,
                     utilization = util
@@ -447,7 +448,6 @@ class StatisticsViewModel(
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     // ── Calendar heatmap — daily expense intensity for selected month ─────────
-
     val calendarHeatmap: StateFlow<List<CalendarDay>> =
         analyticsTransactions.map { txs ->
             val month  = _selectedMonth.value

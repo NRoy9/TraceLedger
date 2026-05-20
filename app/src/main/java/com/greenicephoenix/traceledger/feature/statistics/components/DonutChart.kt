@@ -75,6 +75,7 @@ fun DonutChart(
             scaleAnimExitSpec     = tween(200),
              colorAnimEnterSpec    = tween(200),
             colorAnimExitSpec     = tween(200),
+            labelHelperProperties = ir.ehsannarmani.compose_charts.models.LabelHelperProperties(enabled = false),
             onPieClick = { pie ->
                 // Resolve categoryId from the display name shown in pie.label
                 val tappedId = slices.firstOrNull {
