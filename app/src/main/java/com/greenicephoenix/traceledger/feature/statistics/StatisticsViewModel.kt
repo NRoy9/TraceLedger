@@ -4,15 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.greenicephoenix.traceledger.core.repository.TransactionRepository
 import com.greenicephoenix.traceledger.domain.model.TransactionType
-import com.greenicephoenix.traceledger.feature.statistics.model.ChartPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.YearMonth
 import com.greenicephoenix.traceledger.feature.budgets.data.BudgetRepository
-import com.greenicephoenix.traceledger.feature.budgets.data.BudgetEntity
-import java.time.temporal.ChronoUnit
+import com.greenicephoenix.traceledger.core.repository.AccountRepository
+import com.greenicephoenix.traceledger.core.repository.RecurringTransactionRepository
+import com.greenicephoenix.traceledger.core.repository.CategoryRepository
 import kotlin.math.sqrt
 import kotlin.math.pow
 import com.greenicephoenix.traceledger.feature.statistics.model.CalendarDay
@@ -21,7 +21,10 @@ import java.time.LocalDate
 
 class StatisticsViewModel(
     private val transactionRepository: TransactionRepository,
-    private val budgetRepository:      BudgetRepository
+    private val budgetRepository:      BudgetRepository,
+    private val accountRepository:     AccountRepository,
+    private val recurringRepository:   RecurringTransactionRepository,
+    private val categoryRepository:    CategoryRepository
 ) : ViewModel() {
 
     // ── Inner data classes ────────────────────────────────────────────────────
@@ -111,7 +114,7 @@ class StatisticsViewModel(
     )
 
     data class TopSpendDay(
-        val date:  java.time.LocalDate,
+        val date:  LocalDate,
         val total: Double,
         val rank:  Int
     )
@@ -138,6 +141,95 @@ class StatisticsViewModel(
         val days:          Int,
         val isActive:      Boolean,  // false if today already broke the streak
         val monthBudgetOk: Boolean   // true if currently under budget this month
+    )
+
+    // ── Phase 4 data classes ──────────────────────────────────────────────────
+
+    /** Account balance slice for donut distribution chart */
+    data class AccountSlice(
+        val accountId:   String,
+        val name:        String,
+        val balance:     BigDecimal,
+        val color:       Long,
+        val fraction:    Float
+    )
+
+    /** Per-account cashflow summary */
+    data class AccountCashflow(
+        val accountId: String,
+        val name:      String,
+        val color:     Long,
+        val inflow:    BigDecimal,
+        val outflow:   BigDecimal,
+        val net:       BigDecimal
+    )
+
+    /** Running balance point — one per transaction day */
+    data class RunningBalancePoint(
+        val date:    LocalDate,
+        val balance: Double
+    )
+
+    /** Daily expense for line chart */
+    data class DailyExpensePoint(
+        val day:    Int,
+        val amount: Double
+    )
+
+    /** Net cashflow per month for line chart */
+    data class NetCashflowPoint(
+        val monthLabel: String,
+        val net:        Double
+    )
+
+    /** Burn rate — daily spend vs daily budget */
+    data class BurnRatePoint(
+        val day:           Int,
+        val dailySpend:    Double,
+        val dailyBudget:   Double,
+        val safeToSpend:   Double   // remaining budget / days remaining
+    )
+
+    /** Spending pattern analysis */
+    data class SpendingPatternData(
+        val weekendTotal:   Double,
+        val weekdayTotal:   Double,
+        val earlyMonthAvg:  Double,  // days 1-10
+        val midMonthAvg:    Double,  // days 11-20
+        val lateMonthAvg:   Double,  // days 21-end
+        val avgTransactionValue: Double,
+        val transactionCount:    Int,
+        val fastestGrowingCategories: List<Pair<String, Float>>, // categoryId → growth %
+        val mostFrequentCategories:   List<Pair<String, Int>>    // categoryId → count
+    )
+
+    /** Month-end balance prediction */
+    data class ForecastData(
+        val projectedMonthEndBalance: Double,
+        val projectedMonthEndExpense: Double,
+        val dailySafeToSpend:         Double,
+        val daysRemaining:            Int,
+        val budgetRemaining:          Double,
+        val isOnTrack:                Boolean,
+        val spendingSpikes:           List<LocalDate>  // days with unusually high spend
+    )
+
+    /** Recurring transaction summary */
+    data class RecurringSummary(
+        val totalMonthlyCommitment: BigDecimal,
+        val activeCount:            Int,
+        val expenseCount:           Int,
+        val incomeCount:            Int,
+        val upcomingThisMonth:      List<RecurringItem>
+    )
+
+    data class RecurringItem(
+        val id:        String,
+        val note:      String?,
+        val amount:    BigDecimal,
+        val type:      String,
+        val frequency: String,
+        val nextDate:  LocalDate?
     )
 
     // ── Selected month ────────────────────────────────────────────────────────
@@ -321,13 +413,17 @@ class StatisticsViewModel(
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     // ── Budget utilization rings ──────────────────────────────────────────────
-// Combines budgets for the selected month with expense totals per category.
-
+    // Combines budgets for the selected month with expense totals and category names.
     @OptIn(ExperimentalCoroutinesApi::class)
     val budgetRings: StateFlow<List<BudgetRingData>> =
-        _selectedMonth.flatMapLatest { month ->
-            budgetRepository.observeBudgetsForMonth(month)
-        }.combine(expenseByCategory) { budgets, expenseMap ->
+        combine(
+            _selectedMonth.flatMapLatest { month ->
+                budgetRepository.observeBudgetsForMonth(month)
+            },
+            expenseByCategory,
+            categoryRepository.observeCategories() // provides id → name lookup
+        ) { budgets, expenseMap, categories ->
+            val nameMap = categories.associateBy({ it.id }, { it.name })
             budgets.map { budget ->
                 val spent = if (budget.categoryId != null)
                     expenseMap[budget.categoryId] ?: BigDecimal.ZERO
@@ -342,8 +438,8 @@ class StatisticsViewModel(
                 BudgetRingData(
                     budgetId    = budget.id,
                     categoryId  = budget.categoryId,
-                    //label       = budget.name,
-                    label       = budget.categoryId,
+                    // Resolve human-readable name from categories; "Overall" for null categoryId
+                    label       = budget.categoryId?.let { nameMap[it] ?: it } ?: "Overall",
                     spent       = spent,
                     limit       = budget.limitAmount,
                     utilization = util
@@ -352,7 +448,6 @@ class StatisticsViewModel(
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     // ── Calendar heatmap — daily expense intensity for selected month ─────────
-
     val calendarHeatmap: StateFlow<List<CalendarDay>> =
         analyticsTransactions.map { txs ->
             val month  = _selectedMonth.value
@@ -747,6 +842,315 @@ class StatisticsViewModel(
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000),
             SpendingStreak(0, false, false))
+
+    // ── Phase 4: Account Insights ─────────────────────────────────────────────
+
+    /** Account balance distribution — for donut chart */
+    val accountSlices: StateFlow<List<AccountSlice>> =
+        accountRepository.observeAccounts().map { accounts ->
+            val included = accounts.filter { it.includeInTotal && it.balance > BigDecimal.ZERO }
+            val total    = included.fold(BigDecimal.ZERO) { acc, a -> acc + a.balance }
+            if (total == BigDecimal.ZERO) return@map emptyList()
+            included.map { account ->
+                AccountSlice(
+                    accountId = account.id,
+                    name      = account.name,
+                    balance   = account.balance,
+                    color     = account.color,
+                    fraction  = account.balance.divide(total, 4, RoundingMode.HALF_UP).toFloat()
+                )
+            }.sortedByDescending { it.balance }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Per-account inflow/outflow for selected month */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val accountCashflows: StateFlow<List<AccountCashflow>> =
+        combine(
+            accountRepository.observeAccounts(),
+            monthlyTransactions
+        ) { accounts, txs ->
+            accounts.map { account ->
+                val inflow = txs.filter {
+                    it.type == TransactionType.INCOME && it.toAccountId == account.id
+                }.fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }
+
+                val outflow = txs.filter {
+                    it.type == TransactionType.EXPENSE && it.fromAccountId == account.id
+                }.fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }
+
+                AccountCashflow(
+                    accountId = account.id,
+                    name      = account.name,
+                    color     = account.color,
+                    inflow    = inflow,
+                    outflow   = outflow,
+                    net       = inflow - outflow
+                )
+            }.filter { it.inflow > BigDecimal.ZERO || it.outflow > BigDecimal.ZERO }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Running balance timeline — cumulative balance change over last 90 days */
+    val runningBalance: StateFlow<List<RunningBalancePoint>> =
+        transactionRepository.observeTransactions().map { txs ->
+            val today     = LocalDate.now()
+            val startDate = today.minusDays(89)
+            val relevant  = txs
+                .filter { it.date >= startDate && it.type != TransactionType.TRANSFER }
+                .sortedBy { it.date }
+
+            // Group by date and compute cumulative net
+            var running = 0.0
+            relevant.groupBy { it.date }
+                .entries
+                .sortedBy { it.key }
+                .map { (date, dayTxs) ->
+                    val net = dayTxs.fold(0.0) { acc, tx ->
+                        when (tx.type) {
+                            TransactionType.INCOME  -> acc + tx.amount.toDouble()
+                            TransactionType.EXPENSE -> acc - tx.amount.toDouble()
+                            else                    -> acc
+                        }
+                    }
+                    running += net
+                    RunningBalancePoint(date = date, balance = running)
+                }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+// ── Phase 4: Spending Patterns ────────────────────────────────────────────
+
+    /** Daily expense points for selected month */
+    val dailyExpenseTrend: StateFlow<List<DailyExpensePoint>> =
+        analyticsTransactions.map { txs ->
+            val month  = _selectedMonth.value
+            val byDay  = txs.filter { it.type == TransactionType.EXPENSE }
+                .groupBy { it.date.dayOfMonth }
+                .mapValues { (_, list) -> list.fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }.toDouble() }
+            (1..month.lengthOfMonth()).map { day ->
+                DailyExpensePoint(day = day, amount = byDay[day] ?: 0.0)
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** 12-month net cashflow line chart */
+    val netCashflowTrend: StateFlow<List<NetCashflowPoint>> =
+        last12MonthsTransactions.map { txs ->
+            val cutoff    = YearMonth.now().minusMonths(11)
+            val formatter = java.time.format.DateTimeFormatter.ofPattern("MMM")
+            val byMonth   = txs.groupBy { YearMonth.from(it.date) }
+            (0..11).map { offset ->
+                val ym   = cutoff.plusMonths(offset.toLong())
+                val list = byMonth[ym] ?: emptyList()
+                val inc  = list.filter { it.type == TransactionType.INCOME }
+                    .fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }
+                val exp  = list.filter { it.type == TransactionType.EXPENSE }
+                    .fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }
+                NetCashflowPoint(
+                    monthLabel = ym.format(formatter),
+                    net        = (inc - exp).toDouble()
+                )
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Spending pattern analysis for selected month */
+    val spendingPatterns: StateFlow<SpendingPatternData> =
+        combine(analyticsTransactions, last12MonthsTransactions) { monthly, last12 ->
+            val expenses = monthly.filter { it.type == TransactionType.EXPENSE }
+
+            // Weekend vs weekday
+            val weekendTotal = expenses.filter {
+                it.date.dayOfWeek.value in listOf(6, 7)
+            }.fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }.toDouble()
+            val weekdayTotal = expenses.filter {
+                it.date.dayOfWeek.value in 1..5
+            }.fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }.toDouble()
+
+            // Early/mid/late month
+            val earlyMonth = expenses.filter { it.date.dayOfMonth <= 10 }
+                .fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }.toDouble() / 10.0
+            val midMonth = expenses.filter { it.date.dayOfMonth in 11..20 }
+                .fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }.toDouble() / 10.0
+            val lateMonth = expenses.filter { it.date.dayOfMonth > 20 }
+                .fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }.toDouble()
+                .let { total ->
+                    val days = _selectedMonth.value.lengthOfMonth() - 20
+                    if (days > 0) total / days else 0.0
+                }
+
+            // Avg transaction value + count
+            val avgValue = if (expenses.isNotEmpty())
+                expenses.fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }
+                    .toDouble() / expenses.size
+            else 0.0
+
+            // Most frequent categories
+            val freqMap = expenses.filter { it.categoryId != null }
+                .groupBy { it.categoryId!! }
+                .mapValues { (_, list) -> list.size }
+                .entries.sortedByDescending { it.value }.take(5)
+                .map { it.key to it.value }
+
+            // Fastest growing categories (vs prior month in last12)
+            val cutoff = YearMonth.now().minusMonths(1)
+            val priorMonth = cutoff
+            val thisMonthExpBycat = expenses.filter { it.categoryId != null }
+                .groupBy { it.categoryId!! }
+                .mapValues { (_, list) -> list.fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }.toDouble() }
+            val priorExpBycat = last12.filter {
+                it.type == TransactionType.EXPENSE &&
+                        it.categoryId != null &&
+                        YearMonth.from(it.date) == priorMonth
+            }.groupBy { it.categoryId!! }
+                .mapValues { (_, list) -> list.fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }.toDouble() }
+
+            val fastestGrowing = thisMonthExpBycat.entries
+                .mapNotNull { (catId, thisAmt) ->
+                    val priorAmt = priorExpBycat[catId] ?: return@mapNotNull null
+                    if (priorAmt > 0.0) catId to ((thisAmt - priorAmt) / priorAmt).toFloat()
+                    else null
+                }
+                .sortedByDescending { it.second }
+                .take(5)
+
+            SpendingPatternData(
+                weekendTotal             = weekendTotal,
+                weekdayTotal             = weekdayTotal,
+                earlyMonthAvg            = earlyMonth,
+                midMonthAvg              = midMonth,
+                lateMonthAvg             = lateMonth,
+                avgTransactionValue      = avgValue,
+                transactionCount         = expenses.size,
+                fastestGrowingCategories = fastestGrowing,
+                mostFrequentCategories   = freqMap
+            )
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000),
+            SpendingPatternData(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, emptyList(), emptyList()))
+
+// ── Phase 4: Forecasting ──────────────────────────────────────────────────
+
+    /** Month-end prediction + safe-to-spend + spike detection */
+    val forecastData: StateFlow<ForecastData> =
+        combine(
+            analyticsTransactions,
+            budgetRings,
+            totalExpense
+        ) { txs, rings, spentSoFar ->
+            val today         = LocalDate.now()
+            val daysElapsed   = today.dayOfMonth
+            val daysInMonth   = today.lengthOfMonth()
+            val daysRemaining = daysInMonth - daysElapsed
+
+            val dailyAvgSpend = if (daysElapsed > 0)
+                spentSoFar.toDouble() / daysElapsed else 0.0
+            val projectedExpense = dailyAvgSpend * daysInMonth
+
+            // Budget remaining
+            val overallBudget = rings.firstOrNull { it.categoryId == null }?.limit?.toDouble() ?: 0.0
+            val budgetRemaining = (overallBudget - spentSoFar.toDouble()).coerceAtLeast(0.0)
+            val dailySafeToSpend = if (daysRemaining > 0) budgetRemaining / daysRemaining else 0.0
+
+            // Spike detection — days where spend > 2x daily average
+            val byDay = txs.filter { it.type == TransactionType.EXPENSE }
+                .groupBy { it.date }
+                .mapValues { (_, list) -> list.fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }.toDouble() }
+            val spikes = byDay.entries
+                .filter { (_, amt) -> dailyAvgSpend > 0 && amt > dailyAvgSpend * 2.5 }
+                .map { it.key }
+
+            ForecastData(
+                projectedMonthEndBalance = -(projectedExpense),
+                projectedMonthEndExpense = projectedExpense,
+                dailySafeToSpend         = dailySafeToSpend,
+                daysRemaining            = daysRemaining,
+                budgetRemaining          = budgetRemaining,
+                isOnTrack                = overallBudget == 0.0 || spentSoFar.toDouble() <= overallBudget * (daysElapsed.toDouble() / daysInMonth),
+                spendingSpikes           = spikes
+            )
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000),
+            ForecastData(0.0, 0.0, 0.0, 0, 0.0, true, emptyList()))
+
+    /** Burn rate — daily spend vs allowance over current month */
+    val burnRatePoints: StateFlow<List<BurnRatePoint>> =
+        combine(analyticsTransactions, budgetRings) { txs, rings ->
+            val today         = LocalDate.now()
+            val daysInMonth   = today.lengthOfMonth()
+            val overallBudget = rings.firstOrNull { it.categoryId == null }?.limit?.toDouble() ?: 0.0
+            val dailyBudget   = if (overallBudget > 0.0) overallBudget / daysInMonth else 0.0
+
+            val byDay = txs.filter { it.type == TransactionType.EXPENSE }
+                .groupBy { it.date.dayOfMonth }
+                .mapValues { (_, list) -> list.fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }.toDouble() }
+
+            var cumulativeSpend  = 0.0
+            var cumulativeBudget = 0.0
+
+            (1..today.dayOfMonth).map { day ->
+                cumulativeSpend  += byDay[day] ?: 0.0
+                cumulativeBudget += dailyBudget
+                val remaining       = (overallBudget - cumulativeSpend).coerceAtLeast(0.0)
+                val daysLeft        = (daysInMonth - day).coerceAtLeast(1)
+                BurnRatePoint(
+                    day          = day,
+                    dailySpend   = cumulativeSpend,
+                    dailyBudget  = cumulativeBudget,
+                    safeToSpend  = remaining / daysLeft
+                )
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+// ── Phase 4: Recurring Analytics ─────────────────────────────────────────
+
+    val recurringSummary: StateFlow<RecurringSummary> =
+        recurringRepository.getAllRecurring().map { entities ->
+            val active   = entities.filter { it.isActive }
+            val today    = LocalDate.now()
+            val monthEnd = today.withDayOfMonth(today.lengthOfMonth())
+
+            // Monthly commitment — normalize all frequencies to monthly cost
+            val monthlyCommitment = active.fold(BigDecimal.ZERO) { acc, r ->
+                val multiplier = when (r.frequency) {
+                    "DAILY"       -> BigDecimal(30)
+                    "WEEKLY"      -> BigDecimal(4)
+                    "MONTHLY"     -> BigDecimal.ONE
+                    "QUARTERLY"   -> BigDecimal("0.33")
+                    "HALF_YEARLY" -> BigDecimal("0.17")
+                    "YEARLY"      -> BigDecimal("0.08")
+                    else          -> BigDecimal.ONE
+                }
+                if (r.type == "EXPENSE") acc + r.amount.multiply(multiplier) else acc
+            }
+
+            // Upcoming this month — last generated date before month end
+            val upcoming = active.mapNotNull { r ->
+                val nextDate = r.lastGeneratedDate?.plusDays(when (r.frequency) {
+                    "DAILY"       -> 1L
+                    "WEEKLY"      -> 7L
+                    "MONTHLY"     -> 30L
+                    "QUARTERLY"   -> 90L
+                    "HALF_YEARLY" -> 180L
+                    "YEARLY"      -> 365L
+                    else          -> 30L
+                }) ?: r.startDate
+
+                if (!nextDate.isAfter(monthEnd)) {
+                    RecurringItem(
+                        id        = r.id,
+                        note      = r.note,
+                        amount    = r.amount,
+                        type      = r.type,
+                        frequency = r.frequency,
+                        nextDate  = nextDate
+                    )
+                } else null
+            }.sortedBy { it.nextDate }
+
+            RecurringSummary(
+                totalMonthlyCommitment = monthlyCommitment,
+                activeCount            = active.size,
+                expenseCount           = active.count { it.type == "EXPENSE" },
+                incomeCount            = active.count { it.type == "INCOME" },
+                upcomingThisMonth      = upcoming
+            )
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000),
+            RecurringSummary(BigDecimal.ZERO, 0, 0, 0, emptyList()))
 }
 
 private operator fun LocalDate.compareTo(other: LocalDate): Int = this.compareTo(other)

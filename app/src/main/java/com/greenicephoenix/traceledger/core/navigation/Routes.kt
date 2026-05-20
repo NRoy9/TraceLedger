@@ -65,6 +65,11 @@ object Routes {
     const val STATISTICS_TOP_DAYS    = "statistics/top_days"
     const val STATISTICS_ROLLING     = "statistics/rolling"
 
+    const val STATISTICS_ACCOUNT_INSIGHTS  = "statistics/account_insights"
+    const val STATISTICS_SPENDING_PATTERNS = "statistics/spending_patterns"
+    const val STATISTICS_FORECASTING       = "statistics/forecasting"
+    const val STATISTICS_RECURRING         = "statistics/recurring_analytics"
+
     fun smsEditRuleFor(ruleId: Long) = "sms_edit_rule/$ruleId"
 
     /** Build a concrete IMPORT_REVIEW route for a given accountId. */

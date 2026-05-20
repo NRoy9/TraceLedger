@@ -22,8 +22,42 @@ fun SavingsRateTrendScreen(viewModel: StatisticsViewModel, onBack: () -> Unit) {
         item { BackHeader(title = "Savings Rate Trend", onBack = onBack) }
         item { Text("Monthly savings rate — last 12 months", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)) }
         item {
-            Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surface), modifier = Modifier.fillMaxWidth()) {
-                SavingsRateTrendChart(points = points, modifier = Modifier.fillMaxWidth().padding(16.dp))
+            Card(
+                shape    = RoundedCornerShape(20.dp),
+                colors   = CardDefaults.cardColors(MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                val allZero = points.isEmpty() || points.all { it.rate == 0f }
+                if (allZero) {
+                    // Empty state — no income recorded yet
+                    Box(
+                        modifier           = Modifier.fillMaxWidth().height(200.dp),
+                        contentAlignment   = androidx.compose.ui.Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier            = Modifier.padding(horizontal = 24.dp)
+                        ) {
+                            Text(
+                                text  = "No income recorded yet",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                            Text(
+                                text      = "Savings rate = (income − expense) ÷ income. Add income transactions to see your trend.",
+                                style     = MaterialTheme.typography.bodySmall,
+                                color     = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                    }
+                } else {
+                    SavingsRateTrendChart(
+                        points   = points,
+                        modifier = Modifier.fillMaxWidth().padding(16.dp)
+                    )
+                }
             }
         }
         // Latest rate callout

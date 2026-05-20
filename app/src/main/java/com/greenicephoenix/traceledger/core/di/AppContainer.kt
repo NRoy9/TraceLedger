@@ -100,7 +100,10 @@ class AppContainer(private val context: Context) {
     val statisticsViewModelFactory by lazy {
         StatisticsViewModelFactory(
             transactionRepository = transactionRepository,
-            budgetRepository      = budgetRepository
+            budgetRepository      = budgetRepository,
+            accountRepository     = accountRepository,
+            recurringRepository   = recurringTransactionRepository,
+            categoryRepository    = categoryRepository               // ADD
         )
     }
 

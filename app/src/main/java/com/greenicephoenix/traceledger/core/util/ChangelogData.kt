@@ -3,8 +3,6 @@ package com.greenicephoenix.traceledger.core.util
 /**
  * ChangelogData — Single source of truth for TraceLedger release notes.
  *
- * Previously stored in res/raw/changelog.txt — that file is now dead code and can be deleted.
- * ChangelogParser.kt and ChangelogIconMapper.kt are also no longer used and can be deleted.
  *
  * HOW TO ADD A NEW RELEASE:
  *   1. Bump versionName in app/build.gradle.kts (e.g. "1.4.0")
@@ -49,6 +47,26 @@ enum class ChangeType(val label: String) {
 object ChangelogData {
 
     val entries: List<VersionEntry> = listOf(
+
+        VersionEntry(
+            version     = "1.3.1",
+            releaseDate = "DD MMM 2026",   // fill in when releasing
+            tagline     = "Deep analytics, smarter SMS review, and 23 new ways to understand your money.",
+            changes     = listOf(
+                ChangeItem(ChangeType.NEW,      "Statistics hub redesigned as an interactive dashboard with section headers and chart tile grids"),
+                ChangeItem(ChangeType.NEW,      "23 new statistics screens — Spending Heatmap, Day of Week, Area Chart, Cashflow Waterfall, Treemap, Sankey Money Flow, Financial Health Gauge, Savings Rate Trend, Expense Velocity, Month vs Last Month, Income Stability, Top Spending Days, 30/60/90 Rolling Summary, Account Insights, Spending Patterns, Forecasting, Recurring Analytics"),
+                ChangeItem(ChangeType.NEW,      "SMS Review redesigned — Card, Table, and Wizard view modes for reviewing 1 to 100+ transactions"),
+                ChangeItem(ChangeType.NEW,      "SMS Review: Table view — edit note, date, account, and category inline without opening any sheet"),
+                ChangeItem(ChangeType.NEW,      "SMS Review: Wizard view — one transaction at a time with SAVE & NEXT, SKIP, and REJECT"),
+                ChangeItem(ChangeType.IMPROVED, "Charts migrated to ComposeCharts 0.2.5 — smooth animations, gestures, and tooltips"),
+                ChangeItem(ChangeType.IMPROVED, "Category donut chart supports segment tap, animated center label, and drill-down to transactions"),
+                ChangeItem(ChangeType.FIXED,    "Budget ring labels now show category name instead of internal ID"),
+                ChangeItem(ChangeType.FIXED,    "Savings Rate Trend shows empty state when no income is recorded"),
+                ChangeItem(ChangeType.FIXED,    "Donut chart tooltip now shows category name not internal ID"),
+                ChangeItem(ChangeType.FIXED,    "SMS Review: transactions can no longer be saved without a category"),
+                ChangeItem(ChangeType.FIXED,    "Category legend visible in both light and dark mode"),
+            )
+        ),
 
         // ── v1.3.0 ────────────────────────────────────────────────────────────
         VersionEntry(
