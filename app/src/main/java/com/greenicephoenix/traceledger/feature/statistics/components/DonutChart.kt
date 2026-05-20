@@ -47,11 +47,14 @@ fun DonutChart(
     val totalAmount = slices.fold(BigDecimal.ZERO) { acc, s -> acc + s.amount }
 
     // Pie.Style.Stroke renders as donut ring; width controls ring thickness
-    val pieData = remember(slices, selectedCategoryId) {
+    val pieData = remember(slices, selectedCategoryId, categoryMap) {
         slices.map { slice ->
-            val color = categoryMap[slice.categoryId]?.color?.let { Color(it) } ?: fallback
+            val color        = categoryMap[slice.categoryId]?.color?.let { Color(it) } ?: fallback
+            // Use human-readable name for the popup label shown by ComposeCharts
+            // Use categoryId as the identifier via the onPieClick lookup below
+            val displayName  = categoryMap[slice.categoryId]?.name ?: slice.categoryId
             Pie(
-                label         = slice.categoryId, // use id as key, not name (names can duplicate)
+                label         = displayName,          // shown in popup tooltip
                 data          = slice.amount.toDouble(),
                 color         = color,
                 selectedColor = color,
@@ -70,10 +73,14 @@ fun DonutChart(
             spaceDegree           = 2f,
             scaleAnimEnterSpec    = tween(200),
             scaleAnimExitSpec     = tween(200),
-            colorAnimEnterSpec    = tween(200),
+             colorAnimEnterSpec    = tween(200),
             colorAnimExitSpec     = tween(200),
-            onPieClick            = { pie ->
-                val tappedId = pie.label // label holds categoryId
+            onPieClick = { pie ->
+                // Resolve categoryId from the display name shown in pie.label
+                val tappedId = slices.firstOrNull {
+                    (categoryMap[it.categoryId]?.name ?: it.categoryId) == pie.label
+                }?.categoryId
+
                 if (tappedId != null) {
                     if (selectedCategoryId == tappedId) {
                         onSegmentTap?.invoke(tappedId)

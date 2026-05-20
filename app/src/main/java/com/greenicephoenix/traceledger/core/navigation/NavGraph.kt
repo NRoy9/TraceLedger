@@ -18,6 +18,10 @@ import com.greenicephoenix.traceledger.feature.addtransaction.AddTransactionScre
 import com.greenicephoenix.traceledger.feature.addtransaction.AddTransactionViewModel
 import com.greenicephoenix.traceledger.feature.addtransaction.AddTransactionEvent
 import com.greenicephoenix.traceledger.feature.addtransaction.AddTransactionViewModelFactory
+import com.greenicephoenix.traceledger.feature.statistics.AccountInsightsScreen
+import com.greenicephoenix.traceledger.feature.statistics.SpendingPatternsScreen
+import com.greenicephoenix.traceledger.feature.statistics.ForecastingScreen
+import com.greenicephoenix.traceledger.feature.statistics.RecurringAnalyticsScreen
 import com.greenicephoenix.traceledger.feature.budgets.AddEditBudgetScreen
 import com.greenicephoenix.traceledger.feature.budgets.BudgetsScreen
 import com.greenicephoenix.traceledger.feature.budgets.BudgetsViewModel
@@ -390,6 +394,30 @@ fun TraceLedgerNavGraph(
                 val parentEntry = remember(backStackEntry) { navController.getBackStackEntry(Routes.STATISTICS) }
                 val vm = viewModel<StatisticsViewModel>(parentEntry, factory = app.container.statisticsViewModelFactory)
                 RollingWindowScreen(vm) { navController.popBackStack() }
+            }
+
+            composable(Routes.STATISTICS_ACCOUNT_INSIGHTS) { backStackEntry ->
+                val parentEntry = remember(backStackEntry) { navController.getBackStackEntry(Routes.STATISTICS) }
+                val vm = viewModel<StatisticsViewModel>(parentEntry, factory = app.container.statisticsViewModelFactory)
+                AccountInsightsScreen(vm) { navController.popBackStack() }
+            }
+
+            composable(Routes.STATISTICS_SPENDING_PATTERNS) { backStackEntry ->
+                val parentEntry = remember(backStackEntry) { navController.getBackStackEntry(Routes.STATISTICS) }
+                val vm = viewModel<StatisticsViewModel>(parentEntry, factory = app.container.statisticsViewModelFactory)
+                SpendingPatternsScreen(vm, categories.associateBy { it.id }) { navController.popBackStack() }
+            }
+
+            composable(Routes.STATISTICS_FORECASTING) { backStackEntry ->
+                val parentEntry = remember(backStackEntry) { navController.getBackStackEntry(Routes.STATISTICS) }
+                val vm = viewModel<StatisticsViewModel>(parentEntry, factory = app.container.statisticsViewModelFactory)
+                ForecastingScreen(vm) { navController.popBackStack() }
+            }
+
+            composable(Routes.STATISTICS_RECURRING) { backStackEntry ->
+                val parentEntry = remember(backStackEntry) { navController.getBackStackEntry(Routes.STATISTICS) }
+                val vm = viewModel<StatisticsViewModel>(parentEntry, factory = app.container.statisticsViewModelFactory)
+                RecurringAnalyticsScreen(vm) { navController.popBackStack() }
             }
         }
 
