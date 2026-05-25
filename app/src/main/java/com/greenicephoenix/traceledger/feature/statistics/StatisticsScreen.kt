@@ -312,6 +312,8 @@ fun StatisticsScreen(
         item { Spacer(Modifier.height(8.dp)) }
         item { NavCard("Income",  "Income sources")    { onNavigate(Routes.STATISTICS_INCOME)   } }
         item { Spacer(Modifier.height(8.dp)) }
+        item { NavCard("Investments", "Investment breakdown")     { onNavigate(Routes.STATISTICS_INVESTMENT)  } }
+        item { Spacer(Modifier.height(8.dp)) }
         item { NavCard("Cashflow",  "Daily in vs out")    { onNavigate(Routes.STATISTICS_CASHFLOW)   } }
         item { Spacer(Modifier.height(8.dp)) }
         item { NavCard("Money Flow",  "Sankey diagram")    { onNavigate(Routes.STATISTICS_SANKEY)   } }

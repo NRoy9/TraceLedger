@@ -10,10 +10,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -25,12 +23,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -43,9 +37,6 @@ import com.greenicephoenix.traceledger.domain.model.CategoryUiModel
 import com.greenicephoenix.traceledger.feature.sms.viewmodel.SmsReviewViewModel
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
 import java.util.Date
 import java.util.Locale
 
@@ -318,11 +309,14 @@ private fun TableView(
 
     // Column widths (fixed for horizontal scroll)
     val colDate    = 90.dp
-    val colNote    = 140.dp
     val colAccount = 110.dp
     val colCat     = 110.dp
     val colAmt     = 90.dp
+    val colNote    = 140.dp
     val colActions = 80.dp
+
+    // Single shared scroll state — header and all rows scroll together
+    val sharedScrollState = rememberScrollState()
 
     val headerBg = MaterialTheme.colorScheme.surfaceVariant
     val divColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
@@ -333,16 +327,16 @@ private fun TableView(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(headerBg)
-                .horizontalScroll(rememberScrollState())
+                .horizontalScroll(sharedScrollState)
                 .padding(horizontal = 8.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            TableHeaderCell("DATE",    colDate)
-            TableHeaderCell("NOTE",    colNote)
-            TableHeaderCell("ACCOUNT", colAccount)
-            TableHeaderCell("CATEGORY",colCat)
-            TableHeaderCell("AMOUNT",  colAmt)
-            TableHeaderCell("",        colActions)
+            TableHeaderCell("DATE",     colDate)
+            TableHeaderCell("ACCOUNT",  colAccount)
+            TableHeaderCell("CATEGORY", colCat)
+            TableHeaderCell("AMOUNT",   colAmt)
+            TableHeaderCell("NOTE",     colNote)
+            TableHeaderCell("",         colActions)
         }
         HorizontalDivider(color = divColor)
 
@@ -359,17 +353,18 @@ private fun TableView(
                 )
 
                 TableRow(
-                    item       = item,
-                    state      = state,
-                    accounts   = accounts,
-                    categories = categories,
-                    colDate    = colDate,
-                    colNote    = colNote,
-                    colAccount = colAccount,
-                    colCat     = colCat,
-                    colAmt     = colAmt,
-                    colActions = colActions,
-                    divColor   = divColor,
+                    item        = item,
+                    state       = state,
+                    accounts    = accounts,
+                    categories  = categories,
+                    scrollState = sharedScrollState,
+                    colDate     = colDate,
+                    colAccount  = colAccount,
+                    colCat      = colCat,
+                    colAmt      = colAmt,
+                    colNote     = colNote,
+                    colActions  = colActions,
+                    divColor    = divColor,
                     onStateChange = { newState ->
                         rowStates[item.id] = newState
                         stateVersion++
@@ -413,11 +408,12 @@ private fun TableRow(
     state:         TableRowState,
     accounts:      List<AccountUiModel>,
     categories:    List<CategoryUiModel>,
+    scrollState:   androidx.compose.foundation.ScrollState,
     colDate:       androidx.compose.ui.unit.Dp,
-    colNote:       androidx.compose.ui.unit.Dp,
     colAccount:    androidx.compose.ui.unit.Dp,
     colCat:        androidx.compose.ui.unit.Dp,
     colAmt:        androidx.compose.ui.unit.Dp,
+    colNote:       androidx.compose.ui.unit.Dp,
     colActions:    androidx.compose.ui.unit.Dp,
     divColor:      Color,
     onStateChange: (TableRowState) -> Unit,
@@ -461,7 +457,7 @@ private fun TableRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
+                .horizontalScroll(scrollState)   // shared — scrolls with header
                 .padding(horizontal = 8.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -475,7 +471,7 @@ private fun TableRow(
             )
             Spacer(Modifier.width(6.dp))
 
-            // DATE cell
+            // DATE cell — order 1
             Box(
                 modifier = Modifier
                     .width(colDate)
@@ -490,37 +486,9 @@ private fun TableRow(
                 )
             }
 
-            // NOTE cell — inline editable
-            BasicTextField(
-                value         = state.note,
-                onValueChange = { onStateChange(state.copy(note = it)) },
-                modifier      = Modifier
-                    .width(colNote)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
-                textStyle     = MaterialTheme.typography.bodySmall.copy(
-                    color = MaterialTheme.colorScheme.onSurface
-                ),
-                cursorBrush   = SolidColor(MaterialTheme.colorScheme.primary),
-                singleLine    = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                decorationBox = { inner ->
-                    if (state.note.isEmpty()) {
-                        Text(
-                            "Add note…",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
-                        )
-                    }
-                    inner()
-                }
-            )
-            Spacer(Modifier.width(4.dp))
-
-            // ACCOUNT cell
+            // ACCOUNT cell — order 2
             Box(modifier = Modifier.width(colAccount)) {
-                val accName = accounts.find { it.id == state.accountId }?.name
+                val accName    = accounts.find { it.id == state.accountId }?.name
                 val needsAccount = state.accountId.isBlank()
                 Box(
                     modifier = Modifier
@@ -568,9 +536,9 @@ private fun TableRow(
             }
             Spacer(Modifier.width(4.dp))
 
-            // CATEGORY cell
+            // CATEGORY cell — order 3
             Box(modifier = Modifier.width(colCat)) {
-                val catName = categories.find { it.id == state.categoryId }?.name
+                val catName  = categories.find { it.id == state.categoryId }?.name
                 val needsCat = state.categoryId == null
                 Box(
                     modifier = Modifier
@@ -618,15 +586,43 @@ private fun TableRow(
             }
             Spacer(Modifier.width(4.dp))
 
-            // AMOUNT cell
+            // AMOUNT cell — order 4
             Text(
-                text      = "${if (isExpense) "−" else "+"}${formatAmount(item.parsedAmount)}",
-                modifier  = Modifier.width(colAmt),
-                style     = MaterialTheme.typography.bodySmall,
-                fontWeight= FontWeight.SemiBold,
-                color     = accentColor,
-                textAlign = TextAlign.End,
-                maxLines  = 1
+                text       = "${if (isExpense) "−" else "+"}${formatAmount(item.parsedAmount)}",
+                modifier   = Modifier.width(colAmt),
+                style      = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.SemiBold,
+                color      = accentColor,
+                textAlign  = TextAlign.End,
+                maxLines   = 1
+            )
+            Spacer(Modifier.width(4.dp))
+
+            // NOTE cell — order 5 (inline editable)
+            BasicTextField(
+                value         = state.note,
+                onValueChange = { onStateChange(state.copy(note = it)) },
+                modifier      = Modifier
+                    .width(colNote)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                textStyle     = MaterialTheme.typography.bodySmall.copy(
+                    color = MaterialTheme.colorScheme.onSurface
+                ),
+                cursorBrush   = SolidColor(MaterialTheme.colorScheme.primary),
+                singleLine    = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                decorationBox = { inner ->
+                    if (state.note.isEmpty()) {
+                        Text(
+                            "Add note…",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+                        )
+                    }
+                    inner()
+                }
             )
             Spacer(Modifier.width(4.dp))
 

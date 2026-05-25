@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material.icons.filled.SyncAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -45,6 +44,7 @@ fun TransactionRow(
         TransactionType.EXPENSE  -> NothingRed
         TransactionType.INCOME   -> SuccessGreen
         TransactionType.TRANSFER -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        TransactionType.INVESTMENT -> Color(0xFFFFB300)
     }
 
     Card(

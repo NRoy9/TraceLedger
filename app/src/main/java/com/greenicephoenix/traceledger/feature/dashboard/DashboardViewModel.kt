@@ -16,9 +16,8 @@ import java.time.YearMonth
 @OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModel(
     private val transactionRepository: TransactionRepository,
-    private val recurringRepository: RecurringTransactionRepository,
-    // ← ADDED: injected so we can show the SMS pending badge on the dashboard
-    private val smsQueueRepository: SmsQueueRepository,
+    private val recurringRepository:   RecurringTransactionRepository,
+    private val smsQueueRepository:    SmsQueueRepository,
 ) : ViewModel() {
 
     private val currentMonth  = YearMonth.now()
@@ -44,9 +43,17 @@ class DashboardViewModel(
                 .fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BigDecimal.ZERO)
 
+    // Investment tracked separately from expense
+    val monthlyInvestment: StateFlow<BigDecimal> =
+        currentMonthTransactions.map { txs ->
+            txs.filter { it.type == TransactionType.INVESTMENT }
+                .fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BigDecimal.ZERO)
+
+    // Net = Income - Expense - Investment
     val monthlyNet: StateFlow<BigDecimal> =
-        combine(monthlyIncome, monthlyExpense) { income, expense ->
-            income - expense
+        combine(monthlyIncome, monthlyExpense, monthlyInvestment) { income, expense, investment ->
+            income - expense - investment
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BigDecimal.ZERO)
 
     // ── Previous month expense (for comparison insight) ───────────────────────
@@ -104,8 +111,6 @@ class DashboardViewModel(
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     // ── SMS pending badge ─────────────────────────────────────────────────────
-    // Shows a chip on the dashboard when unreviewed SMS transactions are waiting.
-    // Emits 0 when the SMS feature is unused — no cost when feature is off.
 
     val smsPendingCount: StateFlow<Int> =
         smsQueueRepository.observePendingCount()
@@ -116,8 +121,8 @@ class DashboardViewModel(
 
 class DashboardViewModelFactory(
     private val transactionRepository: TransactionRepository,
-    private val recurringRepository: RecurringTransactionRepository,
-    private val smsQueueRepository: SmsQueueRepository,   // ← ADDED
+    private val recurringRepository:   RecurringTransactionRepository,
+    private val smsQueueRepository:    SmsQueueRepository,
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -125,7 +130,7 @@ class DashboardViewModelFactory(
         return DashboardViewModel(
             transactionRepository = transactionRepository,
             recurringRepository   = recurringRepository,
-            smsQueueRepository    = smsQueueRepository,   // ← ADDED
+            smsQueueRepository    = smsQueueRepository,
         ) as T
     }
 }

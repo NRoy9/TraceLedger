@@ -317,6 +317,24 @@ class StatisticsViewModel(
         incomeByCategory.map { buildCategorySlices(it) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    // ── Investment slices ─────────────────────────────────────────────────────
+
+    private val investmentByCategory: StateFlow<Map<String, BigDecimal>> =
+        monthlyTransactions.map { txs ->
+            txs.filter { it.type == TransactionType.INVESTMENT && it.categoryId != null }
+                .groupBy { it.categoryId!! }
+                .mapValues { (_, list) -> list.fold(BigDecimal.ZERO) { acc, tx -> acc + tx.amount } }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
+    val investmentCategorySlices: StateFlow<List<CategorySlice>> =
+        investmentByCategory.map { buildCategorySlices(it) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val investmentTotal: StateFlow<BigDecimal> =
+        investmentByCategory.map { map ->
+            map.values.fold(BigDecimal.ZERO) { acc, v -> acc + v }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BigDecimal.ZERO)
+
     private fun buildCategorySlices(totals: Map<String, BigDecimal>): List<CategorySlice> {
         if (totals.isEmpty()) return emptyList()
         val total = totals.values.fold(BigDecimal.ZERO) { acc, v -> acc + v }

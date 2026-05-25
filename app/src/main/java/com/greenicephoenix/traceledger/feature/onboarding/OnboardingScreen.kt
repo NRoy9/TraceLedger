@@ -95,7 +95,7 @@ fun OnboardingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
     ) {
 
         // ── PAGER ─────────────────────────────────────────────────────────────
@@ -135,7 +135,7 @@ fun OnboardingScreen(
                         Text(
                             text  = "Skip",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.4f)
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
                         )
                     }
                 } else {
@@ -160,7 +160,7 @@ fun OnboardingScreen(
                     Text(
                         text  = if (isLastPage) "Get Started" else "Next",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 }
             }
@@ -205,7 +205,7 @@ private fun PageContent(page: OnboardingPage) {
         Text(
             text      = page.headline,
             style     = MaterialTheme.typography.headlineLarge,
-            color     = Color.White,
+            color     = MaterialTheme.colorScheme.onBackground,
             lineHeight = 42.sp
         )
 
@@ -215,7 +215,7 @@ private fun PageContent(page: OnboardingPage) {
         Text(
             text  = page.body,
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.White.copy(alpha = 0.6f),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             lineHeight = 24.sp
         )
     }
@@ -241,7 +241,7 @@ private fun PagerDots(pageCount: Int, currentPage: Int) {
             )
 
             val color by animateColorAsState(
-                targetValue   = if (isActive) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.25f),
+                targetValue   = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.25f),
                 animationSpec = tween(durationMillis = 250),
                 label         = "dot_color_$index"
             )

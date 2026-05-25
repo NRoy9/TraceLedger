@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.greenicephoenix.traceledger.core.currency.CurrencyFormatter
 import com.greenicephoenix.traceledger.core.currency.CurrencyManager
@@ -109,6 +110,7 @@ fun TransactionDetailSheet(
                     TransactionType.INCOME   -> SuccessGreen
                     TransactionType.EXPENSE  -> NothingRed
                     TransactionType.TRANSFER -> MaterialTheme.colorScheme.onSurface
+                    TransactionType.INVESTMENT -> Color(0xFFFFB300)
                 }
             )
 

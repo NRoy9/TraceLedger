@@ -161,6 +161,12 @@ class TransactionRepository(
                     accountDao.updateBalanceByDelta(it, transaction.amount)
                 }
             }
+            // INVESTMENT deducts from source account — same as EXPENSE
+            TransactionType.INVESTMENT -> {
+                transaction.fromAccountId?.let {
+                    accountDao.updateBalanceByDelta(it, transaction.amount.negate())
+                }
+            }
         }
     }
 
@@ -184,10 +190,16 @@ class TransactionRepository(
             }
             TransactionType.TRANSFER -> {
                 transaction.fromAccountId?.let {
-                    accountDao.updateBalanceByDelta(it, transaction.amount) // Reverse: add back to source
+                    accountDao.updateBalanceByDelta(it, transaction.amount)
                 }
                 transaction.toAccountId?.let {
-                    accountDao.updateBalanceByDelta(it, transaction.amount.negate()) // Reverse: remove from dest
+                    accountDao.updateBalanceByDelta(it, transaction.amount.negate())
+                }
+            }
+            // INVESTMENT reverse — add back to source account
+            TransactionType.INVESTMENT -> {
+                transaction.fromAccountId?.let {
+                    accountDao.updateBalanceByDelta(it, transaction.amount)
                 }
             }
         }

@@ -223,8 +223,10 @@ fun HistoryScreen(
                     items(group.transactions, key = { it.id }) { tx ->
                         val category = categories.firstOrNull { it.id == tx.categoryId }
                         val account  = when (tx.type) {
-                            TransactionType.EXPENSE, TransactionType.TRANSFER -> accounts.firstOrNull { it.id == tx.fromAccountId }
-                            TransactionType.INCOME -> accounts.firstOrNull { it.id == tx.toAccountId }
+                            TransactionType.EXPENSE,
+                            TransactionType.TRANSFER,
+                            TransactionType.INVESTMENT -> accounts.firstOrNull { it.id == tx.fromAccountId }
+                            TransactionType.INCOME     -> accounts.firstOrNull { it.id == tx.toAccountId }
                         }
                         val displayTitle = if (tx.type == TransactionType.TRANSFER)
                             "Transfer → ${accounts.firstOrNull { it.id == tx.toAccountId }?.name ?: "Account"}"
@@ -276,9 +278,10 @@ fun HistoryScreen(
         else categories.firstOrNull { it.id == tx.categoryId }?.name ?: "Category"
 
         val accountName = when (tx.type) {
-            TransactionType.EXPENSE  -> accounts.firstOrNull { it.id == tx.fromAccountId }?.name
-            TransactionType.INCOME   -> accounts.firstOrNull { it.id == tx.toAccountId }?.name
-            TransactionType.TRANSFER -> accounts.firstOrNull { it.id == tx.fromAccountId }?.name
+            TransactionType.EXPENSE,
+            TransactionType.TRANSFER,
+            TransactionType.INVESTMENT -> accounts.firstOrNull { it.id == tx.fromAccountId }?.name
+            TransactionType.INCOME     -> accounts.firstOrNull { it.id == tx.toAccountId }?.name
         } ?: "Account"
 
         TransactionDetailSheet(

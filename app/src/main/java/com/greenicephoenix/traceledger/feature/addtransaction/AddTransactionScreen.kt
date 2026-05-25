@@ -56,6 +56,9 @@ import com.greenicephoenix.traceledger.core.currency.CurrencyFormatter
 import com.greenicephoenix.traceledger.core.currency.CurrencyManager
 import com.greenicephoenix.traceledger.core.ui.theme.SuccessGreen
 import com.greenicephoenix.traceledger.feature.templates.domain.TransactionTemplateUiModel
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,8 +84,8 @@ fun AddTransactionScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
+                .imePadding()   // shifts content up when keyboard appears
         ) {
-
             // ───────── HEADER ─────────
             Row(
                 modifier = Modifier
@@ -212,6 +215,8 @@ fun AddTransactionScreen(
                         TransactionType.INCOME   -> SuccessGreen
                         TransactionType.TRANSFER ->
                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        TransactionType.INVESTMENT ->
+                            Color(0xFFFFB300) // gold
                     }
                     Row(
                         modifier = Modifier
@@ -346,20 +351,11 @@ private fun TransactionForm(
         item {
             FormSection {
                 AmountInput(
-                    rawValue = state.amount,
-                    onChange = {
+                    rawValue     = state.amount,
+                    transactionType = state.type,
+                    onChange     = {
                         onEvent(AddTransactionEvent.ChangeAmount(it))
                     }
-                )
-
-                FieldError(
-                    visible = state.validationError == TransactionValidationError.MissingAmount,
-                    message = "Amount is required"
-                )
-
-                FieldError(
-                    visible = state.validationError == TransactionValidationError.InvalidAmount,
-                    message = "Enter a valid amount"
                 )
             }
         }
@@ -388,11 +384,6 @@ private fun TransactionForm(
                                         onEvent(AddTransactionEvent.SelectFromAccount(it))
                                     }
                                 )
-
-                                FieldError(
-                                    visible = state.validationError == TransactionValidationError.MissingFromAccount,
-                                    message = "Select an account"
-                                )
                             }
 
                             FormSection {
@@ -403,11 +394,6 @@ private fun TransactionForm(
                                     onSelect = {
                                         onEvent(AddTransactionEvent.SelectCategory(it))
                                     }
-                                )
-
-                                FieldError(
-                                    visible = state.validationError == TransactionValidationError.MissingCategory,
-                                    message = "Select a category"
                                 )
                             }
                         }
@@ -422,11 +408,6 @@ private fun TransactionForm(
                                         onEvent(AddTransactionEvent.SelectToAccount(it))
                                     }
                                 )
-
-                                FieldError(
-                                    visible = state.validationError == TransactionValidationError.MissingToAccount,
-                                    message = "Select an account"
-                                )
                             }
 
                             FormSection {
@@ -438,10 +419,28 @@ private fun TransactionForm(
                                         onEvent(AddTransactionEvent.SelectCategory(it))
                                     }
                                 )
+                            }
+                        }
 
-                                FieldError(
-                                    visible = state.validationError == TransactionValidationError.MissingCategory,
-                                    message = "Select a category"
+                        TransactionType.INVESTMENT -> {
+                            FormSection {
+                                AccountSelector(
+                                    label             = "From Account",
+                                    accounts          = accounts,
+                                    selectedAccountId = state.fromAccountId,
+                                    onSelect          = {
+                                        onEvent(AddTransactionEvent.SelectFromAccount(it))
+                                    }
+                                )
+                            }
+                            FormSection {
+                                CategorySelector(
+                                    categories         = categories,
+                                    type               = CategoryType.INVESTMENT,
+                                    selectedCategoryId = state.categoryId,
+                                    onSelect           = {
+                                        onEvent(AddTransactionEvent.SelectCategory(it))
+                                    }
                                 )
                             }
                         }
@@ -467,11 +466,6 @@ private fun TransactionForm(
                                             onEvent(AddTransactionEvent.SelectFromAccount(it))
                                         }
                                     )
-
-                                    FieldError(
-                                        visible = state.validationError == TransactionValidationError.MissingFromAccount,
-                                        message = "Select a source account"
-                                    )
                                 }
 
                                 Box(
@@ -496,16 +490,6 @@ private fun TransactionForm(
                                             onEvent(AddTransactionEvent.SelectToAccount(it))
                                         }
                                     )
-
-                                    FieldError(
-                                        visible = state.validationError == TransactionValidationError.MissingToAccount,
-                                        message = "Select a destination account"
-                                    )
-
-                                    FieldError(
-                                        visible = state.validationError == TransactionValidationError.SameAccountTransfer,
-                                        message = "Source and destination cannot be the same"
-                                    )
                                 }
                             }
                         }
@@ -528,60 +512,59 @@ private fun TransactionForm(
             )
         }
 
+        // Edit mode: DELETE + UPDATE side by side, equal weight
         item {
             if (state.isEditMode) {
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                HorizontalDivider(
-                    Modifier,
-                    DividerDefaults.Thickness,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                OutlinedButton(
-                    onClick = onDeleteClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onBackground
-                    ),
-                    border = BorderStroke(
-                        width = 1.dp,
-                        color = NothingRed
-                    ),
-                    shape = RoundedCornerShape(14.dp)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(
-                        text = "Delete transaction",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    OutlinedButton(
+                        onClick  = onDeleteClick,
+                        modifier = Modifier.weight(1f).height(52.dp),
+                        colors   = ButtonDefaults.outlinedButtonColors(contentColor = NothingRed),
+                        border   = BorderStroke(1.dp, NothingRed.copy(alpha = 0.5f)),
+                        shape    = RoundedCornerShape(14.dp)
+                    ) {
+                        Text("DELETE", style = MaterialTheme.typography.labelLarge, letterSpacing = 1.sp)
+                    }
+                    Button(
+                        onClick  = { onEvent(AddTransactionEvent.Save) },
+                        enabled  = state.canSave,
+                        modifier = Modifier.weight(1f).height(52.dp),
+                        shape    = RoundedCornerShape(14.dp),
+                        colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("UPDATE", style = MaterialTheme.typography.labelLarge, letterSpacing = 1.sp)
+                    }
                 }
+                Spacer(Modifier.height(16.dp))
             }
         }
 
-        // "Save as Template" — only in add mode
+        // Add mode: Save as Template + SAVE
         if (!isEditMode) {
             item {
-                Spacer(Modifier.height(4.dp))
                 TextButton(
                     onClick  = onSaveAsTemplate,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(
-                        imageVector        = Icons.Default.BookmarkBorder,
-                        contentDescription = null,
-                        modifier           = Modifier.size(16.dp),
-                        tint               = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                    )
+                    Icon(Icons.Default.BookmarkBorder, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
                     Spacer(Modifier.width(6.dp))
-                    Text(
-                        text  = "Save as Template",
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                        style = MaterialTheme.typography.labelMedium
-                    )
+                    Text("Save as Template", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f), style = MaterialTheme.typography.labelMedium)
                 }
+                Spacer(Modifier.height(4.dp))
+                Button(
+                    onClick  = { onEvent(AddTransactionEvent.Save) },
+                    enabled  = state.canSave,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape    = RoundedCornerShape(14.dp),
+                    colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("SAVE", style = MaterialTheme.typography.labelLarge, letterSpacing = 1.sp)
+                }
+                Spacer(Modifier.height(16.dp))
             }
         }
     }
@@ -595,7 +578,7 @@ fun TransactionTypeSelector(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(44.dp)
+            .height(48.dp)
             .background(
                 MaterialTheme.colorScheme.surfaceVariant,
                 RoundedCornerShape(22.dp)
@@ -617,12 +600,18 @@ fun TransactionTypeSelector(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = type.name,
-                    color =
-                        if (isSelected)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    text = when (type) {
+                        TransactionType.EXPENSE    -> "EXPENSE"
+                        TransactionType.INCOME     -> "INCOME"
+                        TransactionType.TRANSFER   -> "TRANSFER"
+                        TransactionType.INVESTMENT -> "INVESTMENT"
+                    },
+                    style    = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                    color    = if (isSelected)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
         }
@@ -631,12 +620,45 @@ fun TransactionTypeSelector(
 
 @Composable
 private fun NotesField(value: String, onChange: (String) -> Unit) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onChange,
-        label = { Text("Notes") },
-        modifier = Modifier.fillMaxWidth()
-    )
+    // Collapsed if empty; expands when user taps "+ Add note"
+    var expanded by remember { mutableStateOf(value.isNotEmpty()) }
+
+    if (!expanded) {
+        TextButton(
+            onClick  = { expanded = true },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                imageVector        = Icons.Default.Add,
+                contentDescription = null,
+                modifier           = Modifier.size(16.dp),
+                tint               = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text  = "Add note",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
+            )
+        }
+    } else {
+        OutlinedTextField(
+            value         = value,
+            onValueChange = onChange,
+            label         = { Text("Notes") },
+            modifier      = Modifier.fillMaxWidth(),
+            trailingIcon  = if (value.isEmpty()) {{
+                IconButton(onClick = { expanded = false }) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Collapse notes",
+                        modifier = Modifier.size(16.dp),
+                        tint     = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                    )
+                }
+            }} else null
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -650,18 +672,50 @@ private fun DateSelector(
         initialSelectedDateMillis = date.toEpochDay() * 86_400_000
     )
     val interactionSource = remember { MutableInteractionSource() }
-
-    OutlinedTextField(
-        value = date.toString(),
-        onValueChange = {},
-        label = { Text("Date") },
-        readOnly = true,
-        interactionSource = interactionSource,
-        modifier = Modifier.fillMaxWidth(),
-        trailingIcon = {
-            Icon(Icons.Default.DateRange, contentDescription = null)
-        }
+    val today = LocalDate.now()
+    val quickDates = listOf(
+        "Today"     to today,
+        "Yesterday" to today.minusDays(1),
+        today.minusDays(2).format(java.time.format.DateTimeFormatter.ofPattern("EEE d")) to today.minusDays(2),
+        today.minusDays(3).format(java.time.format.DateTimeFormatter.ofPattern("EEE d")) to today.minusDays(3),
     )
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            quickDates.forEach { (label, target) ->
+                val isSelected = date == target
+                FilterChip(
+                    selected = isSelected,
+                    onClick  = { onSelect(target) },
+                    label    = {
+                        Text(label, style = MaterialTheme.typography.labelSmall)
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                        selectedLabelColor     = MaterialTheme.colorScheme.primary
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled             = true,
+                        selected            = isSelected,
+                        selectedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                        borderColor         = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                    )
+                )
+            }
+        }
+
+        OutlinedTextField(
+            value             = date.format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy")),
+            onValueChange     = {},
+            label             = { Text("Date") },
+            readOnly          = true,
+            interactionSource = interactionSource,
+            modifier          = Modifier.fillMaxWidth(),
+            trailingIcon      = {
+                Icon(Icons.Default.DateRange, contentDescription = null)
+            }
+        )
+    }
 
     LaunchedEffect(interactionSource) {
         interactionSource.interactions.collect {
@@ -936,81 +990,105 @@ private fun FormSection(
 }
 
 @Composable
-private fun FieldError(
-    visible: Boolean,
-    message: String
-) {
-    if (!visible) return
-
-    Text(
-        text = message,
-        color = MaterialTheme.colorScheme.error,
-        style = MaterialTheme.typography.labelSmall,
-        modifier = Modifier.padding(start = 12.dp, top = 4.dp)
-    )
-}
-
-@Composable
 private fun AmountInput(
-    rawValue: String,
-    onChange: (String) -> Unit
+    rawValue:        String,
+    transactionType: TransactionType,
+    onChange:        (String) -> Unit
 ) {
     val currency by CurrencyManager.currency.collectAsState()
+
+    // Amount color matches transaction type
+    val amountColor = when (transactionType) {
+        TransactionType.EXPENSE    -> NothingRed
+        TransactionType.INCOME     -> SuccessGreen
+        TransactionType.TRANSFER   -> MaterialTheme.colorScheme.onSurface
+        TransactionType.INVESTMENT -> Color(0xFFB8860B)
+    }
 
     var textFieldValue by remember(rawValue) {
         mutableStateOf(
             androidx.compose.ui.text.input.TextFieldValue(
-                text = rawValue,
+                text      = rawValue,
                 selection = androidx.compose.ui.text.TextRange(rawValue.length)
             )
         )
     }
 
-    BasicTextField(
-        value = textFieldValue,
-        onValueChange = { newValue ->
-            val newText = newValue.text
-
-            if (
-                newText.isEmpty() ||
-                newText.matches(Regex("""\d+(\.\d{0,2})?"""))
-            ) {
-                textFieldValue = newValue.copy(
-                    selection = androidx.compose.ui.text.TextRange(newText.length)
-                )
-                onChange(newText)
+    Column(
+        modifier            = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        BasicTextField(
+            value         = textFieldValue,
+            onValueChange = { newValue ->
+                val newText = newValue.text
+                if (newText.isEmpty() || newText.matches(Regex("""\d+(\.\d{0,2})?"""))) {
+                    textFieldValue = newValue.copy(
+                        selection = androidx.compose.ui.text.TextRange(newText.length)
+                    )
+                    onChange(newText)
+                }
+            },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            textStyle       = TextStyle.Default.copy(color = Color.Transparent),
+            cursorBrush     = SolidColor(amountColor),
+            modifier        = Modifier.fillMaxWidth(),
+            decorationBox   = {
+                Column(
+                    modifier            = Modifier.fillMaxWidth().padding(vertical = 20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    val isEmpty = textFieldValue.text.isEmpty()
+                    Text(
+                        text  = if (isEmpty) "0.00"
+                        else CurrencyFormatter.format(textFieldValue.text, currency),
+                        style = MaterialTheme.typography.displaySmall,
+                        color = if (isEmpty) amountColor.copy(alpha = 0.3f) else amountColor
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .width(80.dp)
+                            .height(1.5.dp)
+                            .background(amountColor.copy(alpha = if (isEmpty) 0.2f else 0.5f))
+                    )
+                }
             }
-        },
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Number
-        ),
-        textStyle = TextStyle.Default.copy(color = Color.Transparent),
-        modifier = Modifier.fillMaxWidth(),
-        decorationBox = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = CurrencyFormatter.format(
-                        textFieldValue.text,
-                        currency
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        // Quick-amount chips
+        val quickAmounts = listOf("100", "500", "1000", "5000")
+        Row(
+            modifier              = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            quickAmounts.forEach { amount ->
+                val current = textFieldValue.text.toBigDecimalOrNull()
+                val chip    = amount.toBigDecimal()
+                SuggestionChip(
+                    onClick = {
+                        val newVal = (current?.add(chip) ?: chip).toPlainString()
+                        textFieldValue = androidx.compose.ui.text.input.TextFieldValue(
+                            text      = newVal,
+                            selection = androidx.compose.ui.text.TextRange(newVal.length)
+                        )
+                        onChange(newVal)
+                    },
+                    label  = { Text("+$amount", style = MaterialTheme.typography.labelSmall) },
+                    modifier = Modifier.weight(1f),
+                    colors = SuggestionChipDefaults.suggestionChipColors(
+                        containerColor = amountColor.copy(alpha = 0.08f),
+                        labelColor     = amountColor
                     ),
-                    style = MaterialTheme.typography.displaySmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Box(
-                    modifier = Modifier
-                        .width(64.dp)
-                        .height(1.dp)
-                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
+                    border = SuggestionChipDefaults.suggestionChipBorder(
+                        enabled         = true,
+                        borderColor     = amountColor.copy(alpha = 0.2f),
+                        borderWidth     = 1.dp
+                    )
                 )
             }
         }
-    )
+    }
 }

@@ -71,6 +71,7 @@ import com.greenicephoenix.traceledger.feature.statistics.SavingsRateTrendScreen
 import com.greenicephoenix.traceledger.feature.statistics.ExpenseVelocityScreen
 import com.greenicephoenix.traceledger.feature.statistics.CategoryComparisonScreen
 import com.greenicephoenix.traceledger.feature.statistics.IncomeStabilityScreen
+import com.greenicephoenix.traceledger.feature.statistics.InvestmentBreakdownScreen
 import com.greenicephoenix.traceledger.feature.statistics.TopSpendingDaysScreen
 import com.greenicephoenix.traceledger.feature.statistics.RollingWindowScreen
 
@@ -282,6 +283,24 @@ fun TraceLedgerNavGraph(
                     }
                 )
             }
+
+            composable(Routes.STATISTICS_INVESTMENT) { backStackEntry ->
+                val parentEntry = remember(backStackEntry) { navController.getBackStackEntry(Routes.STATISTICS) }
+                val statisticsViewModel = viewModel<StatisticsViewModel>(parentEntry, factory = app.container.statisticsViewModelFactory)
+                val transactionsViewModel: TransactionsViewModel = viewModel(
+                    factory = TransactionsViewModelFactory(app.container.transactionRepository)
+                )
+                InvestmentBreakdownScreen(
+                    viewModel   = statisticsViewModel,
+                    categoryMap = categories.associateBy { it.id },
+                    onBack      = { navController.popBackStack() },
+                    onDrillDown = { categoryId ->
+                        transactionsViewModel.setCategoryFilter(categoryId)
+                        navController.navigate(Routes.TRANSACTIONS)
+                    }
+                )
+            }
+
             composable(Routes.STATISTICS_INCOME) { backStackEntry ->
                 val parentEntry = remember(backStackEntry) { navController.getBackStackEntry(Routes.STATISTICS) }
                 val statisticsViewModel = viewModel<StatisticsViewModel>(parentEntry, factory = app.container.statisticsViewModelFactory)
@@ -477,7 +496,7 @@ fun TraceLedgerNavGraph(
         composable(Routes.CATEGORIES) {
             CategoriesScreen(
                 categories      = categories,
-                isLightTheme    = isLightTheme,
+                //isLightTheme    = isLightTheme,
                 viewModel       = categoriesViewModel,
                 onBack          = { navController.popBackStack() },
                 onAddCategory   = { navController.navigate(Routes.ADD_CATEGORY) },

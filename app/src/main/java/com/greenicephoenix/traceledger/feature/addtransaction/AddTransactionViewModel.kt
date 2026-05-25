@@ -67,6 +67,7 @@ class AddTransactionViewModel(
                 TransactionType.EXPENSE  -> it.copy(type = type, toAccountId = null)
                 TransactionType.INCOME   -> it.copy(type = type, fromAccountId = null)
                 TransactionType.TRANSFER -> it.copy(type = type, categoryId = null)
+                TransactionType.INVESTMENT -> it.copy(type = type, toAccountId = null)
             }
         }
     }
@@ -164,6 +165,12 @@ class AddTransactionViewModel(
                 state.toAccountId == null                  -> TransactionValidationError.MissingToAccount
                 state.fromAccountId == state.toAccountId   -> TransactionValidationError.SameAccountTransfer
                 else                                       -> null
+            }
+            // INVESTMENT: same validation as EXPENSE — needs fromAccount + category
+            TransactionType.INVESTMENT -> when {
+                state.fromAccountId == null -> TransactionValidationError.MissingFromAccount
+                state.categoryId == null    -> TransactionValidationError.MissingCategory
+                else                        -> null
             }
         }
     }

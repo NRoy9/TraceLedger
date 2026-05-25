@@ -30,7 +30,6 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.greenicephoenix.traceledger.core.currency.CurrencyFormatter
 import com.greenicephoenix.traceledger.core.currency.CurrencyManager
 import com.greenicephoenix.traceledger.core.database.entity.RecurringTransactionEntity
@@ -125,6 +124,9 @@ fun AddEditRecurringScreen(
                 fromAccountId != null &&
                         toAccountId != null &&
                         fromAccountId != toAccountId
+
+            TransactionType.INVESTMENT ->
+                fromAccountId != null && categoryId != null
         }
     }
 
@@ -250,6 +252,21 @@ fun AddEditRecurringScreen(
                             type = com.greenicephoenix.traceledger.domain.model.CategoryType.INCOME,
                             selectedCategoryId = categoryId,
                             onSelect = { categoryId = it }
+                        )
+                    }
+
+                    TransactionType.INVESTMENT -> {
+                        AccountSelector(
+                            label             = "From Account",
+                            accounts          = accounts,
+                            selectedAccountId = fromAccountId,
+                            onSelect          = { fromAccountId = it }
+                        )
+                        CategorySelector(
+                            categories         = categories,
+                            type               = com.greenicephoenix.traceledger.domain.model.CategoryType.INVESTMENT,
+                            selectedCategoryId = categoryId,
+                            onSelect           = { categoryId = it }
                         )
                     }
 

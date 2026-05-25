@@ -176,7 +176,7 @@ private fun TemplateCard(
     // Resolve human-readable subtitle (category or account names)
     val subtitle = buildString {
         when (template.type) {
-            TransactionType.EXPENSE, TransactionType.INCOME -> {
+            TransactionType.EXPENSE, TransactionType.INCOME, TransactionType.INVESTMENT -> {
                 categories.firstOrNull { it.id == template.categoryId }?.name?.let { append(it) }
                 accounts.firstOrNull { it.id == (template.fromAccountId ?: template.toAccountId) }
                     ?.name?.let {
@@ -208,6 +208,7 @@ private fun TemplateCard(
                 TransactionType.EXPENSE  -> NothingRed
                 TransactionType.INCOME   -> SuccessGreen
                 TransactionType.TRANSFER -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                TransactionType.INVESTMENT -> Color(0xFFFFB300)
             }
             Box(
                 modifier = Modifier

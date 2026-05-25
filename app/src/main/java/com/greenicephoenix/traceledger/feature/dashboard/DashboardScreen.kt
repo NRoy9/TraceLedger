@@ -48,6 +48,7 @@ fun DashboardScreen(
     val monthlyIncome        by dashboardViewModel.monthlyIncome.collectAsState()
     val monthlyExpense       by dashboardViewModel.monthlyExpense.collectAsState()
     val monthlyNet           by dashboardViewModel.monthlyNet.collectAsState()
+    val monthlyInvestment    by dashboardViewModel.monthlyInvestment.collectAsState()
     val recentTxs            by dashboardViewModel.recentTransactions.collectAsState()
     val recurringCost        by dashboardViewModel.recurringMonthlyCost.collectAsState()
     val spendingInsight      by dashboardViewModel.spendingChangeInsight.collectAsState()
@@ -222,46 +223,44 @@ fun DashboardScreen(
                         style = MaterialTheme.typography.displaySmall,
                         color = MaterialTheme.colorScheme.onBackground
                     )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text  = "In  ${CurrencyFormatter.format(monthlyIncome.toPlainString(), currency)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = SuccessGreen
-                        )
-                        Text(
-                            text  = "Out  ${CurrencyFormatter.format(monthlyExpense.toPlainString(), currency)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = NothingRed
-                        )
-                    }
                 }
             }
         }
 
-        // ── NET THIS MONTH ────────────────────────────────────────────────────
-        item(span = { GridItemSpan(2) }) {
-            Card(
-                shape  = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Text(
-                        text  = "NET THIS MONTH",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text  = CurrencyFormatter.format(monthlyNet.toPlainString(), currency),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = if (monthlyNet >= BigDecimal.ZERO) SuccessGreen else NothingRed
-                    )
-                }
-            }
+        // ── INCOME card (half width) ──────────────────────────────────────────
+        item {
+            SummaryHalfCard(
+                label  = "INCOME",
+                amount = CurrencyFormatter.format(monthlyIncome.toPlainString(), currency),
+                color  = SuccessGreen
+            )
+        }
+
+        // ── EXPENSE card (half width) ─────────────────────────────────────────
+        item {
+            SummaryHalfCard(
+                label  = "EXPENSE",
+                amount = CurrencyFormatter.format(monthlyExpense.toPlainString(), currency),
+                color  = NothingRed
+            )
+        }
+
+        // ── INVESTED card (half width) ────────────────────────────────────────
+        item {
+            SummaryHalfCard(
+                label  = "INVESTED",
+                amount = CurrencyFormatter.format(monthlyInvestment.toPlainString(), currency),
+                color  = Color(0xFFFFB300) // gold
+            )
+        }
+
+        // ── NET card (half width) ─────────────────────────────────────────────
+        item {
+            SummaryHalfCard(
+                label  = "NET",
+                amount = CurrencyFormatter.format(monthlyNet.toPlainString(), currency),
+                color  = if (monthlyNet >= BigDecimal.ZERO) SuccessGreen else NothingRed
+            )
         }
 
         // ── BUDGET CARD ───────────────────────────────────────────────────────
@@ -407,6 +406,7 @@ fun DashboardScreen(
                             val account  = when (tx.type) {
                                 TransactionType.EXPENSE,
                                 TransactionType.TRANSFER -> accounts.firstOrNull { it.id == tx.fromAccountId }
+                                TransactionType.INVESTMENT -> accounts.firstOrNull { it.id == tx.fromAccountId }
                                 TransactionType.INCOME   -> accounts.firstOrNull { it.id == tx.toAccountId }
                             }
                             val title = when (tx.type) {
@@ -417,11 +417,13 @@ fun DashboardScreen(
                                 TransactionType.INCOME   -> SuccessGreen
                                 TransactionType.EXPENSE  -> NothingRed
                                 TransactionType.TRANSFER -> MaterialTheme.colorScheme.onSurface
+                                TransactionType.INVESTMENT -> Color(0xFFFFB300)
                             }
                             val prefix = when (tx.type) {
                                 TransactionType.INCOME   -> "+"
                                 TransactionType.EXPENSE  -> "-"
                                 TransactionType.TRANSFER -> ""
+                                TransactionType.INVESTMENT -> "-"
                             }
 
                             RecentTransactionRow(
@@ -735,6 +737,28 @@ fun SpendingForecastCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun SummaryHalfCard(label: String, amount: String, color: Color) {
+    Card(
+        shape  = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text  = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+            )
+            Text(
+                text  = amount,
+                style = MaterialTheme.typography.titleMedium,
+                color = color
+            )
         }
     }
 }

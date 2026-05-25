@@ -189,6 +189,11 @@ class StatementImportRepository(
                     accountDao.updateBalanceByDelta(it, transaction.amount)
                 }
             }
+            TransactionType.INVESTMENT -> {
+                transaction.fromAccountId?.let {
+                    accountDao.updateBalanceByDelta(it, transaction.amount.negate())
+                }
+            }
         }
     }
 
@@ -199,7 +204,7 @@ class StatementImportRepository(
      * Called by the ViewModel for each included [ ImportReviewItem ].
      *
      * @param accountId   The account this statement belongs to.
-     * @param item        The reviewed transaction data.
+     * @param []item        The reviewed transaction data.
      * @param isCredit    true = INCOME (money in), false = EXPENSE (money out).
      */
     fun buildEntity(

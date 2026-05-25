@@ -142,6 +142,7 @@ fun AddEditTemplateScreen(
                                     TransactionType.EXPENSE  -> toAccountId = null
                                     TransactionType.INCOME   -> fromAccountId = null
                                     TransactionType.TRANSFER -> categoryId = null
+                                    TransactionType.INVESTMENT -> toAccountId = null
                                 }
                             }
                         )
@@ -170,10 +171,11 @@ fun AddEditTemplateScreen(
                         item {
                             CategorySelector(
                                 categories         = categories,
-                                type               = if (type == TransactionType.EXPENSE)
-                                    com.greenicephoenix.traceledger.domain.model.CategoryType.EXPENSE
-                                else
-                                    com.greenicephoenix.traceledger.domain.model.CategoryType.INCOME,
+                                type               = when (type) {
+                                    TransactionType.EXPENSE    -> com.greenicephoenix.traceledger.domain.model.CategoryType.EXPENSE
+                                    TransactionType.INVESTMENT -> com.greenicephoenix.traceledger.domain.model.CategoryType.INVESTMENT
+                                    else                       -> com.greenicephoenix.traceledger.domain.model.CategoryType.INCOME
+                                },
                                 selectedCategoryId = categoryId,
                                 onSelect           = { categoryId = it }
                             )

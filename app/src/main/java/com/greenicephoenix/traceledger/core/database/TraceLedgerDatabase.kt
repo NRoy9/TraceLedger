@@ -36,7 +36,7 @@ import com.greenicephoenix.traceledger.core.database.entity.SmsCustomRuleEntity
         SmsPendingTransactionEntity::class,   // ← NEW
         SmsCustomRuleEntity::class,
     ],
-    version = 14,
+    version = 15,
     exportSchema = true
 )
 @TypeConverters(RoomConverters::class)
@@ -81,12 +81,13 @@ abstract class TraceLedgerDatabase : RoomDatabase() {
                         MIGRATION_10_11,
                         MIGRATION_11_12,
                         MIGRATION_12_13,
-                        MIGRATION_13_14
+                        MIGRATION_13_14,
+                        MIGRATION_14_15
                     )
 
             if (BuildConfig.DEBUG) {
                 // ✅ Debug-only safety valve
-                builder.fallbackToDestructiveMigration()
+                builder.fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
             }
 
             return builder.build()

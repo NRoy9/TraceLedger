@@ -48,30 +48,41 @@ object ChangelogData {
 
     val entries: List<VersionEntry> = listOf(
 
+        // ── v1.4.0 ────────────────────────────────────────────────────────────
         VersionEntry(
-            version     = "1.3.1",
-            releaseDate = "DD MMM 2026",   // fill in when releasing
-            tagline     = "Deep analytics, smarter SMS review, and 23 new ways to understand your money.",
+            version     = "1.3.2",
+            releaseDate = "26 May 2026",
+            tagline     = "Investments arrive, analytics go deep, and the entire finance experience evolves.",
             changes     = listOf(
-                ChangeItem(ChangeType.NEW,      "Statistics hub redesigned as an interactive dashboard with section headers and chart tile grids"),
-                ChangeItem(ChangeType.NEW,      "23 new statistics screens — Spending Heatmap, Day of Week, Area Chart, Cashflow Waterfall, Treemap, Sankey Money Flow, Financial Health Gauge, Savings Rate Trend, Expense Velocity, Month vs Last Month, Income Stability, Top Spending Days, 30/60/90 Rolling Summary, Account Insights, Spending Patterns, Forecasting, Recurring Analytics"),
-                ChangeItem(ChangeType.NEW,      "SMS Review redesigned — Card, Table, and Wizard view modes for reviewing 1 to 100+ transactions"),
-                ChangeItem(ChangeType.NEW,      "SMS Review: Table view — edit note, date, account, and category inline without opening any sheet"),
-                ChangeItem(ChangeType.NEW,      "SMS Review: Wizard view — one transaction at a time with SAVE & NEXT, SKIP, and REJECT"),
-                ChangeItem(ChangeType.IMPROVED, "Charts migrated to ComposeCharts 0.2.5 — smooth animations, gestures, and tooltips"),
-                ChangeItem(ChangeType.IMPROVED, "Category donut chart supports segment tap, animated center label, and drill-down to transactions"),
-                ChangeItem(ChangeType.FIXED,    "Budget ring labels now show category name instead of internal ID"),
-                ChangeItem(ChangeType.FIXED,    "Savings Rate Trend shows empty state when no income is recorded"),
-                ChangeItem(ChangeType.FIXED,    "Donut chart tooltip now shows category name not internal ID"),
-                ChangeItem(ChangeType.FIXED,    "SMS Review: transactions can no longer be saved without a category"),
-                ChangeItem(ChangeType.FIXED,    "Category legend visible in both light and dark mode"),
+                ChangeItem(ChangeType.NEW,      "Investment transaction type — track stocks, mutual funds, FDs, crypto, gold, PPF, NPS, and real estate separately from expenses"),
+                ChangeItem(ChangeType.NEW,      "Investment categories seeded by default with distinct colors and icon support"),
+                ChangeItem(ChangeType.NEW,      "Investment Breakdown screen with donut chart and category drill-down"),
+                ChangeItem(ChangeType.NEW,      "Dashboard expanded to 4 summary cards: Income, Expense, Invested, and Net"),
+                ChangeItem(ChangeType.NEW,      "Net now calculated as Income − Expense − Investment for a more accurate financial overview"),
+                ChangeItem(ChangeType.NEW,      "Add Transaction fully redesigned — adaptive amount field colors, quick amount chips (+100/+500/+1000/+5000), compact notes section, and full-width SAVE action"),
+                ChangeItem(ChangeType.NEW,      "Date picker shortcuts added: Today, Yesterday, and named recent days for faster entry"),
+                ChangeItem(ChangeType.NEW,      "Statistics system completely rebuilt with 23 analytics screens across 4 phases"),
+                ChangeItem(ChangeType.NEW,      "Statistics hub redesigned into an interactive dashboard with chart tile grids and grouped insights"),
+                ChangeItem(ChangeType.NEW,      "New analytics include Spending Heatmap, Day-of-Week Analysis, Cashflow Waterfall, Treemap, Sankey Flow, Financial Health Gauge, Savings Rate Trend, Expense Velocity, Income Stability, Forecasting, Recurring Analytics, and more"),
+                ChangeItem(ChangeType.NEW,      "SMS Review redesigned with Card, Table, and Wizard modes for reviewing 1 to 100+ transactions efficiently"),
+                ChangeItem(ChangeType.NEW,      "Categories expanded with richer seeded defaults for Expense, Income, and Investment tracking"),
+                ChangeItem(ChangeType.NEW,      "Category system upgraded with 50+ adaptive icons and expanded color palettes"),
+                ChangeItem(ChangeType.IMPROVED, "Edit Transaction actions streamlined with Update and Delete buttons aligned in a single row"),
+                ChangeItem(ChangeType.IMPROVED, "Charts upgraded to ComposeCharts 0.2.5 with smoother animations, gestures, and improved drill-down interactions"),
+                ChangeItem(ChangeType.IMPROVED, "Add/Edit Category screen redesigned with responsive icon and color grids"),
+                ChangeItem(ChangeType.IMPROVED, "Theme handling improved across onboarding, categories, charts, and analytics"),
+                ChangeItem(ChangeType.FIXED,    "SMS Review table headers and rows now scroll perfectly in sync"),
+                ChangeItem(ChangeType.FIXED,    "Transactions can no longer be saved from SMS Review without assigning a category"),
+                ChangeItem(ChangeType.FIXED,    "Investment transactions now correctly deduct from source account balance"),
+                ChangeItem(ChangeType.FIXED,    "Budget rings, legends, and chart tooltips now consistently display proper category names"),
+                ChangeItem(ChangeType.FIXED,    "Savings Rate Trend now shows proper empty states when income data is unavailable"),
             )
         ),
 
         // ── v1.3.0 ────────────────────────────────────────────────────────────
         VersionEntry(
             version     = "1.3.0",
-            releaseDate = "25 May 2026",
+            releaseDate = "25 Apr 2026",
             tagline     = "Private SMS intelligence, now smarter, cleaner, and fully customizable.",
             changes     = listOf(
                 ChangeItem(ChangeType.NEW,      "SMS Transaction Detection — auto-detects financial SMS from 30+ Indian banks and wallets"),
@@ -102,12 +113,12 @@ object ChangelogData {
             releaseDate = "15 Mar 2026",
             tagline     = "A new look, a new icon, and your balance on your home screen.",
             changes     = listOf(
-                ChangeItem(ChangeType.IMPROVED, "GIP Theme Rebrand — TraceLedger now uses the GreenIcePhoenix Sovereign Violet accent across all interactive elements"),
-                ChangeItem(ChangeType.IMPROVED, "New App Icon — Vines Green on Void Deep, aligned with the GreenIcePhoenix ecosystem and built for adaptive icon launchers"),
                 ChangeItem(ChangeType.NEW,      "Extra Dark Mode — OLED-optimised Extra Dark theme joins System, Light, and Dark in Settings → Appearance"),
                 ChangeItem(ChangeType.NEW,      "Home Screen Widget — shows total balance and this month's income, expense, and net at a glance"),
                 ChangeItem(ChangeType.NEW,      "Spending Forecast — Dashboard now projects your month-end spend based on your daily average so far"),
                 ChangeItem(ChangeType.NEW,      "Transaction Templates — save any transaction as a template and replay it in one tap from the Add Transaction screen"),
+                ChangeItem(ChangeType.IMPROVED, "GIP Theme Rebrand — TraceLedger now uses the GreenIcePhoenix Sovereign Violet accent across all interactive elements"),
+                ChangeItem(ChangeType.IMPROVED, "New App Icon — Vines Green on Void Deep, aligned with the GreenIcePhoenix ecosystem and built for adaptive icon launchers"),
                 ChangeItem(ChangeType.IMPROVED, "Settings Redesign — reorganised into clear sections with inline current values for currency, theme, and format"),
             )
         ),
@@ -137,9 +148,9 @@ object ChangelogData {
                 ChangeItem(ChangeType.NEW,      "Spending Trends — category spend tracked across months with a line chart in Statistics"),
                 ChangeItem(ChangeType.NEW,      "Transaction History — transactions now grouped by date with Today / Yesterday headers and an amount range filter"),
                 ChangeItem(ChangeType.NEW,      "Transaction Detail — tap any transaction to view full details, edit, or delete from the detail sheet"),
-                ChangeItem(ChangeType.IMPROVED, "Budget Warnings — alerts now trigger at 75% (warning) and 90% (critical), not just when exceeded"),
                 ChangeItem(ChangeType.NEW,      "Number Format — choose between Indian (1,00,000) and International (100,000) formatting in Settings"),
                 ChangeItem(ChangeType.NEW,      "Onboarding — first-launch walkthrough introducing the app to new users"),
+                ChangeItem(ChangeType.IMPROVED, "Budget Warnings — alerts now trigger at 75% (warning) and 90% (critical), not just when exceeded"),
             )
         ),
 
