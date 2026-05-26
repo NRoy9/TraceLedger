@@ -50,7 +50,7 @@ object ChangelogData {
 
         // ── v1.4.0 ────────────────────────────────────────────────────────────
         VersionEntry(
-            version     = "1.3.2",
+            version     = "1.4.0",
             releaseDate = "26 May 2026",
             tagline     = "Investments arrive, analytics go deep, and the entire finance experience evolves.",
             changes     = listOf(

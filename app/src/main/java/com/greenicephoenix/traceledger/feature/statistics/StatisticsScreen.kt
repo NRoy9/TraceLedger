@@ -1,7 +1,5 @@
 package com.greenicephoenix.traceledger.feature.statistics
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,7 +17,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -29,7 +26,6 @@ import com.greenicephoenix.traceledger.core.currency.CurrencyFormatter
 import com.greenicephoenix.traceledger.core.currency.CurrencyManager
 import com.greenicephoenix.traceledger.core.navigation.Routes
 import com.greenicephoenix.traceledger.core.ui.components.MonthSelector
-import com.greenicephoenix.traceledger.core.ui.theme.ErrorRed
 import com.greenicephoenix.traceledger.core.ui.theme.NothingRed
 import com.greenicephoenix.traceledger.core.ui.theme.SuccessGreen
 import com.greenicephoenix.traceledger.core.ui.theme.WarningAmber
@@ -327,6 +323,28 @@ fun StatisticsScreen(
         item { NavCard("Month vs Last Month", "Top 5 category comparison")         { onNavigate(Routes.STATISTICS_CAT_COMPARE) } }
         item { Spacer(Modifier.height(8.dp)) }
         item { NavCard("Spending Map",        "Proportional treemap by category")  { onNavigate(Routes.STATISTICS_TREEMAP)     } }
+
+        // ═════════════════════════════════════════════════════════════════════
+        // INVESTMENTS
+        // Routes: INVESTMENT, INVESTMENT_TREND, INVESTMENT_COMPARE, PORTFOLIO
+        // ═════════════════════════════════════════════════════════════════════
+        item { Spacer(Modifier.height(28.dp)) }
+        item {
+            DashboardSectionHeader(
+                title       = "INVESTMENTS",
+                subtitle    = "Where your wealth is being built",
+                accentColor = Color(0xFFB8860B) // dark gold — matches INVESTMENT type color
+            )
+        }
+        item { Spacer(Modifier.height(14.dp)) }
+
+        item { NavCard("Investment Breakdown",  "Category-wise allocation this month")       { onNavigate(Routes.STATISTICS_INVESTMENT)         } }
+        item { Spacer(Modifier.height(8.dp)) }
+        item { NavCard("Investment Trend",      "Monthly invested amount over 12 months")    { onNavigate(Routes.STATISTICS_INVESTMENT_TREND)    } }
+        item { Spacer(Modifier.height(8.dp)) }
+        item { NavCard("Invest vs Earn vs Spend", "Side-by-side 6-month comparison")         { onNavigate(Routes.STATISTICS_INVESTMENT_COMPARE)  } }
+        item { Spacer(Modifier.height(8.dp)) }
+        item { NavCard("Portfolio Allocation",  "How your investment mix evolves over time") { onNavigate(Routes.STATISTICS_PORTFOLIO)           } }
 
         // ═════════════════════════════════════════════════════════════════════
         // SPENDING PATTERNS

@@ -60,7 +60,7 @@ private val pages = listOf(
         icon     = Icons.Default.BarChart,
         iconTint = SovereignViolet,
         headline = "BUDGETS &\nINSIGHTS",
-        body     = "Monthly budgets with early warnings before you overspend. Charts and trends updated in real time. Recurring rules, reusable templates, and a home screen widget."
+        body     = "Monthly budgets with early warnings before you overspend. 23 analytics screens — charts, heatmaps, forecasting, and investment tracking. Recurring rules, reusable templates, and a home screen widget."
     ),
 
     // Page 4 — SMS detection & statement import

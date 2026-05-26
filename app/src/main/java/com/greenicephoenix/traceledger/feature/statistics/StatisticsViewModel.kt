@@ -409,6 +409,103 @@ class StatisticsViewModel(
 
     // ── Sparkline data for hub cards (daily totals for selected month) ─────────
 
+    // ── Investment monthly trend — 12 months of total invested amount ────────
+    // One data point per month, ordered oldest → newest.
+    // Used by InvestmentTrendScreen (line chart).
+
+    data class InvestmentTrendPoint(
+        val monthLabel: String,   // "Jan", "Feb" etc.
+        val invested:   Double
+    )
+
+    val investmentMonthlyTrend: StateFlow<List<InvestmentTrendPoint>> =
+        last12MonthsTransactions.map { txs ->
+            val cutoff    = YearMonth.now().minusMonths(11)
+            val formatter = java.time.format.DateTimeFormatter.ofPattern("MMM")
+            val byMonth   = mutableMapOf<YearMonth, BigDecimal>()
+            txs.filter { it.type == TransactionType.INVESTMENT }.forEach { tx ->
+                val ym = YearMonth.from(tx.date)
+                byMonth[ym] = (byMonth[ym] ?: BigDecimal.ZERO) + tx.amount
+            }
+            (0..11).map { offset ->
+                val ym = cutoff.plusMonths(offset.toLong())
+                InvestmentTrendPoint(
+                    monthLabel = ym.format(formatter),
+                    invested   = (byMonth[ym] ?: BigDecimal.ZERO).toDouble()
+                )
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    // ── Investment vs Expense vs Income — last 6 months grouped ─────────────
+
+    data class InvestmentComparePoint(
+        val monthLabel: String,
+        val income:     Double,
+        val expense:    Double,
+        val invested:   Double
+    )
+
+    val investmentComparePoints: StateFlow<List<InvestmentComparePoint>> =
+        last12MonthsTransactions.map { txs ->
+            val cutoff    = YearMonth.now().minusMonths(5)
+            val formatter = java.time.format.DateTimeFormatter.ofPattern("MMM")
+
+            data class Trio(var income: BigDecimal = BigDecimal.ZERO,
+                            var expense: BigDecimal = BigDecimal.ZERO,
+                            var invested: BigDecimal = BigDecimal.ZERO)
+
+            val byMonth = mutableMapOf<YearMonth, Trio>()
+            txs.forEach { tx ->
+                val ym = YearMonth.from(tx.date)
+                if (ym.isBefore(cutoff)) return@forEach
+                val trio = byMonth.getOrPut(ym) { Trio() }
+                when (tx.type) {
+                    TransactionType.INCOME     -> trio.income   += tx.amount
+                    TransactionType.EXPENSE    -> trio.expense  += tx.amount
+                    TransactionType.INVESTMENT -> trio.invested += tx.amount
+                    else                       -> Unit
+                }
+            }
+            (0..5).map { offset ->
+                val ym   = cutoff.plusMonths(offset.toLong())
+                val trio = byMonth[ym] ?: Trio()
+                InvestmentComparePoint(
+                    monthLabel = ym.format(formatter),
+                    income     = trio.income.toDouble(),
+                    expense    = trio.expense.toDouble(),
+                    invested   = trio.invested.toDouble()
+                )
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    // ── Portfolio allocation — per-category investment totals over 12 months ─
+
+    data class PortfolioMonthPoint(
+        val monthLabel: String,
+        val byCategory: Map<String, Double>   // categoryId → amount invested that month
+    )
+
+    val portfolioAllocationPoints: StateFlow<List<PortfolioMonthPoint>> =
+        last12MonthsTransactions.map { txs ->
+            val cutoff    = YearMonth.now().minusMonths(11)
+            val formatter = java.time.format.DateTimeFormatter.ofPattern("MMM")
+            val byMonthCat = mutableMapOf<YearMonth, MutableMap<String, BigDecimal>>()
+            txs.filter { it.type == TransactionType.INVESTMENT && it.categoryId != null }
+                .forEach { tx ->
+                    val ym  = YearMonth.from(tx.date)
+                    val cat = tx.categoryId!!
+                    byMonthCat.getOrPut(ym) { mutableMapOf() }
+                        .merge(cat, tx.amount, BigDecimal::add)
+                }
+            (0..11).map { offset ->
+                val ym = cutoff.plusMonths(offset.toLong())
+                PortfolioMonthPoint(
+                    monthLabel = ym.format(formatter),
+                    byCategory = byMonthCat[ym]?.mapValues { (_, v) -> v.toDouble() } ?: emptyMap()
+                )
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     /** Daily expense totals for the selected month — used by SparklineChart on hub. */
     val dailyExpensePoints: StateFlow<List<Float>> =
         analyticsTransactions.map { txs ->

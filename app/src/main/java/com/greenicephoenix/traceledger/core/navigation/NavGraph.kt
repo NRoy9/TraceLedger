@@ -72,6 +72,9 @@ import com.greenicephoenix.traceledger.feature.statistics.ExpenseVelocityScreen
 import com.greenicephoenix.traceledger.feature.statistics.CategoryComparisonScreen
 import com.greenicephoenix.traceledger.feature.statistics.IncomeStabilityScreen
 import com.greenicephoenix.traceledger.feature.statistics.InvestmentBreakdownScreen
+import com.greenicephoenix.traceledger.feature.statistics.InvestmentTrendScreen
+import com.greenicephoenix.traceledger.feature.statistics.InvestmentVsExpenseScreen
+import com.greenicephoenix.traceledger.feature.statistics.PortfolioAllocationScreen
 import com.greenicephoenix.traceledger.feature.statistics.TopSpendingDaysScreen
 import com.greenicephoenix.traceledger.feature.statistics.RollingWindowScreen
 
@@ -298,6 +301,35 @@ fun TraceLedgerNavGraph(
                         transactionsViewModel.setCategoryFilter(categoryId)
                         navController.navigate(Routes.TRANSACTIONS)
                     }
+                )
+            }
+
+            composable(Routes.STATISTICS_INVESTMENT_TREND) { backStackEntry ->
+                val parentEntry = remember(backStackEntry) { navController.getBackStackEntry(Routes.STATISTICS) }
+                val statisticsViewModel = viewModel<StatisticsViewModel>(parentEntry, factory = app.container.statisticsViewModelFactory)
+                InvestmentTrendScreen(
+                    viewModel   = statisticsViewModel,
+                    categoryMap = categories.associateBy { it.id },
+                    onBack      = { navController.popBackStack() }
+                )
+            }
+
+            composable(Routes.STATISTICS_INVESTMENT_COMPARE) { backStackEntry ->
+                val parentEntry = remember(backStackEntry) { navController.getBackStackEntry(Routes.STATISTICS) }
+                val statisticsViewModel = viewModel<StatisticsViewModel>(parentEntry, factory = app.container.statisticsViewModelFactory)
+                InvestmentVsExpenseScreen(
+                    viewModel = statisticsViewModel,
+                    onBack    = { navController.popBackStack() }
+                )
+            }
+
+            composable(Routes.STATISTICS_PORTFOLIO) { backStackEntry ->
+                val parentEntry = remember(backStackEntry) { navController.getBackStackEntry(Routes.STATISTICS) }
+                val statisticsViewModel = viewModel<StatisticsViewModel>(parentEntry, factory = app.container.statisticsViewModelFactory)
+                PortfolioAllocationScreen(
+                    viewModel   = statisticsViewModel,
+                    categoryMap = categories.associateBy { it.id },
+                    onBack      = { navController.popBackStack() }
                 )
             }
 
