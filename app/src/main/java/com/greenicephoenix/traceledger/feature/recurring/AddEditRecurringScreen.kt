@@ -33,6 +33,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import com.greenicephoenix.traceledger.core.currency.CurrencyFormatter
 import com.greenicephoenix.traceledger.core.currency.CurrencyManager
 import com.greenicephoenix.traceledger.core.database.entity.RecurringTransactionEntity
+import com.greenicephoenix.traceledger.core.ui.theme.NothingRed
+import com.greenicephoenix.traceledger.core.ui.theme.SuccessGreen
 import com.greenicephoenix.traceledger.domain.model.TransactionType
 import com.greenicephoenix.traceledger.domain.model.AccountUiModel
 import com.greenicephoenix.traceledger.domain.model.CategoryUiModel
@@ -211,6 +213,7 @@ fun AddEditRecurringScreen(
 
                 AmountInput(
                     rawValue = amountText,
+                    transactionType = selectedType,
                     onChange = { amountText = it }
                 )
 
@@ -554,13 +557,14 @@ private fun RecurringTransactionTypeSelector(
     selected: TransactionType,
     onSelected: (TransactionType) -> Unit
 ) {
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(44.dp)
+            .height(52.dp)
             .background(
                 MaterialTheme.colorScheme.surfaceVariant,
-                RoundedCornerShape(22.dp)
+                RoundedCornerShape(24.dp)
             )
             .padding(4.dp)
     ) {
@@ -569,28 +573,43 @@ private fun RecurringTransactionTypeSelector(
 
             val isSelected = type == selected
 
+            val typeColor = when (type) {
+                TransactionType.EXPENSE -> NothingRed
+                TransactionType.INCOME -> SuccessGreen
+                TransactionType.TRANSFER ->
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                TransactionType.INVESTMENT ->
+                    Color(0xFFFFB300)
+            }
+
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
                     .background(
                         if (isSelected)
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            typeColor.copy(alpha = 0.12f)
                         else
                             Color.Transparent,
-                        RoundedCornerShape(18.dp)
+                        RoundedCornerShape(20.dp)
                     )
                     .clickable { onSelected(type) },
                 contentAlignment = Alignment.Center
             ) {
 
                 Text(
-                    text = type.name,
-                    color =
-                        if (isSelected)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    text = when (type) {
+                        TransactionType.EXPENSE -> "Expense"
+                        TransactionType.INCOME -> "Income"
+                        TransactionType.TRANSFER -> "Transfer"
+                        TransactionType.INVESTMENT -> "Investment"
+                    },
+                    maxLines = 1,
+                    style = MaterialTheme.typography.labelMedium,
+                    color    = if (isSelected)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
         }
@@ -600,9 +619,20 @@ private fun RecurringTransactionTypeSelector(
 @Composable
 private fun AmountInput(
     rawValue: String,
+    transactionType: TransactionType,
     onChange: (String) -> Unit
 ) {
+
     val currency by CurrencyManager.currency.collectAsState()
+
+    val typeColor = when (transactionType) {
+        TransactionType.EXPENSE -> NothingRed
+        TransactionType.INCOME -> SuccessGreen
+        TransactionType.TRANSFER ->
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+        TransactionType.INVESTMENT ->
+            Color(0xFFFFB300)
+    }
 
     var textFieldValue by remember(rawValue) {
         mutableStateOf(
@@ -616,6 +646,7 @@ private fun AmountInput(
     BasicTextField(
         value = textFieldValue,
         onValueChange = { newValue ->
+
             val newText = newValue.text
 
             if (
@@ -625,37 +656,51 @@ private fun AmountInput(
                 textFieldValue = newValue.copy(
                     selection = androidx.compose.ui.text.TextRange(newText.length)
                 )
+
                 onChange(newText)
             }
         },
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Number
         ),
-        textStyle = TextStyle.Default.copy(color = Color.Transparent),
+        textStyle = TextStyle.Default.copy(
+            color = Color.Transparent
+        ),
         modifier = Modifier.fillMaxWidth(),
         decorationBox = {
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 24.dp),
+                    .padding(top = 12.dp, bottom = 28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+
+                val hasValue = textFieldValue.text.isNotBlank()
+
                 Text(
                     text = CurrencyFormatter.format(
-                        textFieldValue.text,
+                        if (textFieldValue.text.isBlank()) "0"
+                        else textFieldValue.text,
                         currency
                     ),
-                    style = MaterialTheme.typography.displaySmall,
-                    color = MaterialTheme.colorScheme.onSurface
+                    style = MaterialTheme.typography.displayMedium,
+                    color =
+                        if (hasValue)
+                            typeColor
+                        else
+                            typeColor.copy(alpha = 0.45f)
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Box(
                     modifier = Modifier
-                        .width(64.dp)
-                        .height(1.dp)
-                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
+                        .width(80.dp)
+                        .height(2.dp)
+                        .background(
+                            typeColor.copy(alpha = 0.25f)
+                        )
                 )
             }
         }

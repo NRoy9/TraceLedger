@@ -401,7 +401,6 @@ fun SettingsScreen(
 //                iconBg   = BgBlue,
 //                title    = "Terms of Use",
 //                subtitle = "Usage terms and conditions",
-//                onClick  = { uriHandler.openUri(URL_TERMS) }
 //            )
 
             Spacer(Modifier.height(20.dp))

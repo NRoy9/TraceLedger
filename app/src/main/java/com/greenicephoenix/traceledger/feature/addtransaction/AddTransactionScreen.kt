@@ -601,12 +601,12 @@ fun TransactionTypeSelector(
             ) {
                 Text(
                     text = when (type) {
-                        TransactionType.EXPENSE    -> "EXPENSE"
-                        TransactionType.INCOME     -> "INCOME"
-                        TransactionType.TRANSFER   -> "TRANSFER"
-                        TransactionType.INVESTMENT -> "INVESTMENT"
+                        TransactionType.EXPENSE    -> "Expense"
+                        TransactionType.INCOME     -> "Income"
+                        TransactionType.TRANSFER   -> "Transfer"
+                        TransactionType.INVESTMENT -> "Investment"
                     },
-                    style    = MaterialTheme.typography.labelSmall,
+                    style    = MaterialTheme.typography.labelMedium,
                     maxLines = 1,
                     color    = if (isSelected)
                         MaterialTheme.colorScheme.primary
