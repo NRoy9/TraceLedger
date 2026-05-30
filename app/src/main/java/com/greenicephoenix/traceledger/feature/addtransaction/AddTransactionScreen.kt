@@ -889,8 +889,7 @@ fun CategorySelector(
         leadingIcon = selectedCategory?.let {
             {
                 Icon(
-                    imageVector = CategoryIcons.all[it.icon]
-                        ?: CategoryIcons.all["default"]!!,
+                    imageVector = CategoryIcons.iconFor(it.icon),
                     contentDescription = null,
                     tint = Color(it.color),
                     modifier = Modifier.size(18.dp)
@@ -942,8 +941,7 @@ fun CategorySelector(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = CategoryIcons.all[category.icon]
-                                ?: CategoryIcons.all["default"]!!,
+                            imageVector = CategoryIcons.iconFor(category.icon),
                             contentDescription = null,
                             tint = Color(category.color),
                             modifier = Modifier.size(20.dp)

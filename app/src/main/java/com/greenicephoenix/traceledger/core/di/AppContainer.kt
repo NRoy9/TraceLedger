@@ -8,6 +8,9 @@ import com.greenicephoenix.traceledger.core.database.TraceLedgerDatabase
 import com.greenicephoenix.traceledger.core.datastore.SettingsDataStore
 import com.greenicephoenix.traceledger.core.export.ExportService
 import com.greenicephoenix.traceledger.core.importer.ImportService
+import com.greenicephoenix.traceledger.core.backup.AutoBackupScheduler
+import com.greenicephoenix.traceledger.core.backup.BackupFrequency
+import kotlinx.coroutines.flow.first
 import com.greenicephoenix.traceledger.core.recurring.RecurringTransactionGenerator
 import com.greenicephoenix.traceledger.core.repository.AccountRepository
 import com.greenicephoenix.traceledger.core.repository.CategoryRepository
@@ -79,11 +82,34 @@ class AppContainer(private val context: Context) {
     }
 
     val exportService by lazy {
-        ExportService(database = database, contentResolver = context.contentResolver)
+        ExportService(
+            database        = database,
+            contentResolver = context.contentResolver,
+            settingsStore   = settingsDataStore
+        )
     }
 
     val importService by lazy {
-        ImportService(database = database, contentResolver = context.contentResolver)
+        ImportService(
+            database        = database,
+            contentResolver = context.contentResolver,
+            settingsStore   = settingsDataStore
+        )
+    }
+
+    /**
+     * Called from TraceLedgerApp.onCreate() inside a coroutine.
+     * Re-registers the periodic backup work on every app start so the schedule
+     * survives app updates (WorkManager clears jobs on APK update on some devices).
+     * If backup is disabled or no folder is set, this is a no-op.
+     */
+    suspend fun scheduleBackupIfEnabled() {
+        val enabled   = settingsDataStore.autoBackupEnabled.first()
+        val freqName  = settingsDataStore.autoBackupFrequency.first()
+        val folderUri = settingsDataStore.autoBackupFolderUri.first()
+        if (enabled && folderUri != null) {
+            AutoBackupScheduler.schedule(context, BackupFrequency.fromName(freqName))
+        }
     }
 
     val recurringGenerator: RecurringTransactionGenerator by lazy {

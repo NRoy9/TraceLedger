@@ -24,6 +24,11 @@ object SettingsKeys {
     val REMINDER_ENABLED = booleanPreferencesKey("reminder_enabled")
     val REMINDER_HOUR    = intPreferencesKey("reminder_hour")     // 0–23, default 22 (10 PM)
     val REMINDER_MINUTE  = intPreferencesKey("reminder_minute")   // 0–59, default 0
+
+    // Auto Backup keys — added for v1.5.0
+    val AUTO_BACKUP_ENABLED   = booleanPreferencesKey("auto_backup_enabled")
+    val AUTO_BACKUP_FREQUENCY = stringPreferencesKey("auto_backup_frequency")  // BackupFrequency.name
+    val AUTO_BACKUP_FOLDER_URI = stringPreferencesKey("auto_backup_folder_uri") // persisted SAF tree URI
 }
 
 enum class NumberFormat(val label: String, val example: String) {
@@ -87,6 +92,40 @@ class SettingsDataStore(private val context: Context) {
         context.settingsDataStore.edit {
             it[SettingsKeys.REMINDER_HOUR]   = hour
             it[SettingsKeys.REMINDER_MINUTE] = minute
+        }
+    }
+
+    // ── Auto Backup ───────────────────────────────────────────────────────────
+
+    /** Whether the periodic JSON auto-backup is active. Defaults to false. */
+    val autoBackupEnabled: Flow<Boolean> =
+        context.settingsDataStore.data.map { it[SettingsKeys.AUTO_BACKUP_ENABLED] ?: false }
+
+    /** Backup frequency — stored as BackupFrequency.name. Defaults to WEEKLY. */
+    val autoBackupFrequency: Flow<String> =
+        context.settingsDataStore.data.map {
+            it[SettingsKeys.AUTO_BACKUP_FREQUENCY] ?: "WEEKLY"
+        }
+
+    /**
+     * SAF tree URI string for the user-picked backup folder.
+     * Null until the user picks a folder for the first time.
+     */
+    val autoBackupFolderUri: Flow<String?> =
+        context.settingsDataStore.data.map { it[SettingsKeys.AUTO_BACKUP_FOLDER_URI] }
+
+    suspend fun setAutoBackupEnabled(enabled: Boolean) {
+        context.settingsDataStore.edit { it[SettingsKeys.AUTO_BACKUP_ENABLED] = enabled }
+    }
+
+    suspend fun setAutoBackupFrequency(frequency: String) {
+        context.settingsDataStore.edit { it[SettingsKeys.AUTO_BACKUP_FREQUENCY] = frequency }
+    }
+
+    suspend fun setAutoBackupFolderUri(uri: String?) {
+        context.settingsDataStore.edit {
+            if (uri != null) it[SettingsKeys.AUTO_BACKUP_FOLDER_URI] = uri
+            else it.remove(SettingsKeys.AUTO_BACKUP_FOLDER_URI)
         }
     }
 }

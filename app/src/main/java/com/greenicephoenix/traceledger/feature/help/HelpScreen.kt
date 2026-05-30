@@ -13,6 +13,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -60,7 +61,7 @@ private val FAQ_SECTIONS = listOf(
             ),
             FaqItem(
                 question = "Is my data backed up to the cloud?",
-                answer   = "No. All data is stored only on your device. Use Settings → Export Data to create local backups you can save to Google Drive or any storage you choose."
+                answer   = "No. All data is stored only on your device. Go to Settings → Import / Export to create a full JSON backup you can save anywhere — or enable Auto Backup to have it written automatically on a schedule."
             )
         )
     ),
@@ -71,7 +72,7 @@ private val FAQ_SECTIONS = listOf(
         items = listOf(
             FaqItem(
                 question = "What transaction types are available?",
-                answer   = "Expense: money leaving an account. Income: money entering an account. Transfer: money moving between two of your own accounts (e.g. wallet to bank). Transfer does not require a category."
+                answer   = "Expense: money leaving an account. Income: money entering an account. Transfer: money moving between two of your own accounts — no category required. Investment: money put into stocks, mutual funds, FDs, crypto, gold, PPF, NPS, or real estate — tracked separately from expenses so your net worth calculation stays accurate."
             ),
             FaqItem(
                 question = "How do I edit or delete a transaction?",
@@ -88,6 +89,29 @@ private val FAQ_SECTIONS = listOf(
             FaqItem(
                 question = "What is a recurring transaction?",
                 answer   = "A recurring transaction is a template that auto-creates a transaction on a set schedule (daily, weekly, monthly, etc.). Set them up in Settings → Recurring. They run in the background and are generated automatically on the due date."
+            )
+        )
+    ),
+
+    FaqSection(
+        title = "Investments",
+        icon  = Icons.AutoMirrored.Outlined.TrendingUp,
+        items = listOf(
+            FaqItem(
+                question = "What is the Investment transaction type?",
+                answer   = "Investment is a dedicated transaction type for money you put to work — stocks, mutual funds, fixed deposits, crypto, gold, PPF, NPS, real estate, and more. It deducts from your account like an expense but is tracked separately, so your Net (Income − Expense − Investment) gives a truer picture of your cashflow."
+            ),
+            FaqItem(
+                question = "How is Investment different from Expense?",
+                answer   = "Expenses are money spent and gone. Investments are assets you own. The Dashboard shows them on separate cards. Statistics has a dedicated Investments section with breakdown by category, 12-month trend, comparison against income and expenses, and portfolio allocation over time."
+            ),
+            FaqItem(
+                question = "What investment categories are available?",
+                answer   = "9 categories are seeded by default: Stocks, Mutual Funds, Fixed Deposit, Gold, Crypto, Real Estate, Retirement, and Other. You can add, rename, or recolour any of these in Settings → Categories → Investment tab."
+            ),
+            FaqItem(
+                question = "Where do I see my investment analytics?",
+                answer   = "Go to the Statistics tab and scroll to the Investments section. You will find: Investment Breakdown (category donut for the selected month), Investment Trend (12-month line chart), Invest vs Earn vs Spend (grouped bar comparison), and Portfolio Allocation (how your investment mix evolves over time)."
             )
         )
     ),
@@ -121,19 +145,19 @@ private val FAQ_SECTIONS = listOf(
         items = listOf(
             FaqItem(
                 question = "Are expense and income categories separate?",
-                answer   = "Yes. A category belongs to either Expense or Income. Some may share the same name (e.g. 'Other') but they are tracked independently and shown separately in Statistics."
+                answer   = "Yes. Categories belong to Expense, Income, or Investment — each tracked independently and shown separately in Statistics. Some may share the same name (e.g. 'Other') but are always distinct."
             ),
             FaqItem(
                 question = "Can I create custom categories?",
-                answer   = "Yes. Go to Settings → Categories, tap the + button, enter a name, pick a colour, and save. Custom categories can be edited or deleted at any time."
+                answer   = "Yes. Go to Settings → Categories, pick the tab (Expense, Income, or Investment), tap the + button, enter a name, pick a colour and icon, and save. Custom categories can be edited at any time."
             ),
             FaqItem(
                 question = "Why can't I delete a category?",
-                answer   = "A category cannot be deleted if any transaction has been recorded under it. To delete the category, first reassign those transactions to a different category or delete them."
+                answer   = "A category cannot be deleted if any transaction has been recorded under it. To delete the category, first reassign those transactions to a different category or delete them. You also cannot rename a category that has transactions — this protects your history."
             ),
             FaqItem(
                 question = "Do Transfer transactions need a category?",
-                answer   = "No. Transfers move money between your own accounts and do not require a category. Only Expense and Income transactions are categorised."
+                answer   = "No. Transfers move money between your own accounts and do not require a category. Only Expense, Income, and Investment transactions are categorised."
             )
         )
     ),
@@ -195,19 +219,31 @@ private val FAQ_SECTIONS = listOf(
         items = listOf(
             FaqItem(
                 question = "How do I back up my data?",
-                answer   = "Go to Settings → Export Data and choose JSON (full backup: accounts, categories, budgets, and transactions) or CSV (transactions only). Save the file to any location you choose."
+                answer   = "Go to Settings → Import / Export and tap JSON Backup. This creates a single file containing all accounts, categories, budgets, recurring rules, templates, transactions, and app settings. Save it anywhere — local storage, Google Drive, or any folder you choose."
             ),
             FaqItem(
-                question = "How do I restore a backup?",
-                answer   = "Go to Settings → Import Data and select your backup file. JSON import replaces all existing data. CSV import adds transactions to your existing accounts and categories."
+                question = "How do I restore a backup on a new device?",
+                answer   = "Go to Settings → Import / Export and tap JSON Restore. Select your backup file. The app merges the backup with any existing data — accounts and categories that already exist by the same name are not duplicated. Verify account balances after restoring, as they are recalculated from transactions."
+            ),
+            FaqItem(
+                question = "What does the JSON backup include?",
+                answer   = "Everything: accounts, categories, budgets, recurring rules, templates, all transactions, currency setting, and number format. It is a complete snapshot for full device migration."
+            ),
+            FaqItem(
+                question = "How do I import from a spreadsheet or manual CSV?",
+                answer   = "Go to Settings → Import / Export and tap CSV Import. The file format is transaction-centric: each row is one transaction with columns for date, type, amount, from_account, from_account_type, to_account, category, and note. Accounts and categories are derived automatically. A mapping screen lets you match CSV names to your existing accounts and categories, or create new ones, before confirming."
+            ),
+            FaqItem(
+                question = "How do I get a CSV template to fill in?",
+                answer   = "Tap Download CSV Template in Settings → Import / Export. The file includes the correct column headers, instructions as comments, and example rows. Open it in any spreadsheet app, fill in your transactions, delete the example rows, save, and import."
+            ),
+            FaqItem(
+                question = "What is Auto Backup?",
+                answer   = "Auto Backup writes a dated JSON backup to a folder you choose, automatically, on a schedule: Daily, Weekly (default), Bi-weekly, Monthly, or Quarterly. Enable it in Settings → Import / Export → Auto Backup. You will receive a notification each time a backup is saved."
             ),
             FaqItem(
                 question = "How do I import a bank statement?",
-                answer   = "Go to Settings → Import Transactions. Select an account, pick the statement file (PDF or CSV), review the detected transactions on the next screen, and tap Confirm. Support varies by bank and file format."
-            ),
-            FaqItem(
-                question = "What file formats are supported?",
-                answer   = "JSON and CSV for full data backups. PDF and CSV for bank statement import via the Import Transactions flow. The statement parser works best with standard CSV exports from most Indian banks."
+                answer   = "Go to Settings → Import Transactions. Select an account, pick the statement file (PDF or CSV), review the detected transactions, and tap Confirm. This is separate from the CSV Import flow — it is designed for raw bank statement files, not the TraceLedger CSV format."
             )
         )
     ),

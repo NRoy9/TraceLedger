@@ -42,6 +42,10 @@ object Routes {
     const val IMPORT_HUB    = "import_hub"
     const val IMPORT_REVIEW = "import_review/{accountId}"
     const val IMPORT_RESULT = "import_result/{imported}/{skipped}/{duplicates}"
+
+    // ── v1.5.0: Dedicated Import/Export screen + CSV mapping ──────────────────
+    const val IMPORT_EXPORT  = "import_export"
+    const val CSV_MAPPING    = "csv_mapping"
     const val SMS_SETTINGS = "sms_settings"
     const val SMS_REVIEW   = "sms_review"
     const val SMS_CUSTOM_RULES = "sms_custom_rules"

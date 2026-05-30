@@ -60,6 +60,8 @@ import com.greenicephoenix.traceledger.feature.sms.viewmodel.AddEditRuleViewMode
 import com.greenicephoenix.traceledger.feature.help.HelpScreen
 import com.greenicephoenix.traceledger.feature.about.ChangelogScreen
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import com.greenicephoenix.traceledger.feature.statistics.SpendingHeatmapScreen
 import com.greenicephoenix.traceledger.feature.statistics.WeekdayPatternScreen
 import com.greenicephoenix.traceledger.feature.statistics.AreaChartScreen
@@ -77,6 +79,9 @@ import com.greenicephoenix.traceledger.feature.statistics.InvestmentVsExpenseScr
 import com.greenicephoenix.traceledger.feature.statistics.PortfolioAllocationScreen
 import com.greenicephoenix.traceledger.feature.statistics.TopSpendingDaysScreen
 import com.greenicephoenix.traceledger.feature.statistics.RollingWindowScreen
+import com.greenicephoenix.traceledger.feature.settings.ImportExportScreen
+import com.greenicephoenix.traceledger.feature.settings.ImportMappingScreen
+import com.greenicephoenix.traceledger.core.importer.CsvImportHolder
 
 @Composable
 fun TraceLedgerNavGraph(
@@ -475,7 +480,6 @@ fun TraceLedgerNavGraph(
         /* ── SETTINGS ──────────────────────────────────────────────────────── */
         composable(Routes.SETTINGS) {
             val scope = rememberCoroutineScope()
-            // Collect the SMS pending count here so the Settings row stays live
             val smsPendingCount by app.container.smsQueueRepository
                 .observePendingCount()
                 .collectAsState(initial = 0)
@@ -483,45 +487,95 @@ fun TraceLedgerNavGraph(
                 onBudgetsClick   = { navController.navigate(Routes.BUDGETS) },
                 onNavigate       = { route -> navController.navigate(route) },
                 smsPendingCount  = smsPendingCount,
-                onExportSelected = { },
-                onExportUriReady = { format, uri ->
-                    scope.launch {
-                        try {
-                            app.container.exportService.export(format, uri)
-                            snackbarHostState.showSnackbar("Export completed")
-                        } catch (e: Exception) {
-                            snackbarHostState.showSnackbar("Export failed: ${e.message}")
-                        }
+                onJsonImportPreviewRequested = { uri ->
+                    withContext(Dispatchers.IO) {
+                        app.container.importService.previewJson(uri)
                     }
                 },
-                onImportContinue         = { },
-                onImportUriReady         = { uri ->
+                onJsonImportConfirmed = { uri, onProgress ->
                     scope.launch {
                         try {
-                            app.container.importService.importJson(uri = uri, onProgress = { })
-                            snackbarHostState.showSnackbar("Import completed")
+                            app.container.importService.importJson(uri = uri, onProgress = { p -> onProgress(p) })
+                            snackbarHostState.showSnackbar("JSON backup restored successfully")
                         } catch (e: Exception) {
                             snackbarHostState.showSnackbar(e.message ?: "Import failed")
                         }
-                    }
-                },
-                onImportPreviewRequested = { uri -> app.container.importService.previewCsv(uri) },
-                onImportConfirmed        = { uri, onProgress ->
-                    scope.launch {
-                        val result = app.container.importService.importCsvTransactions(
-                            uri = uri, onProgress = onProgress
-                        )
-                        val msg = buildString {
-                            append("${result.imported} transaction(s) imported")
-                            if (result.skipped > 0) append(", ${result.skipped} row(s) skipped")
-                        }
-                        snackbarHostState.showSnackbar(msg)
+                        onProgress(100)
                     }
                 },
                 onImportError = { message ->
                     scope.launch { snackbarHostState.showSnackbar(message) }
                 }
             )
+        }
+
+        /* ── IMPORT / EXPORT ───────────────────────────────────────────────── */
+        composable(Routes.IMPORT_EXPORT) {
+            val scope = rememberCoroutineScope()
+            ImportExportScreen(
+                onBack       = { navController.popBackStack() },
+                onNavigateToCsvMapping = { parsed ->
+                    CsvImportHolder.set(parsed)
+                    navController.navigate(Routes.CSV_MAPPING)
+                },
+                onJsonImportPreviewRequested = { uri ->
+                    withContext(Dispatchers.IO) {
+                        app.container.importService.previewJson(uri)
+                    }
+                },
+                onJsonImportConfirmed = { uri, onProgress ->
+                    scope.launch {
+                        try {
+                            app.container.importService.importJson(uri = uri, onProgress = { p -> onProgress(p) })
+                            snackbarHostState.showSnackbar("JSON backup restored successfully")
+                        } catch (e: Exception) {
+                            snackbarHostState.showSnackbar(e.message ?: "Import failed")
+                        }
+                        onProgress(100)
+                    }
+                },
+                onImportError = { message ->
+                    scope.launch { snackbarHostState.showSnackbar(message) }
+                }
+            )
+        }
+
+        /* ── CSV MAPPING ────────────────────────────────────────────────────── */
+        composable(Routes.CSV_MAPPING) {
+            val scope   = rememberCoroutineScope()
+            val parsed  = remember { CsvImportHolder.take() }
+
+            if (parsed == null) {
+                LaunchedEffect(Unit) { navController.popBackStack() }
+            } else {
+                ImportMappingScreen(
+                    parsedData = parsed,
+                    onBack     = {
+                        CsvImportHolder.clear()
+                        navController.popBackStack()
+                    },
+                    onConfirm  = { mapping ->
+                        scope.launch {
+                            try {
+                                val result = app.container.importService.importFromCsvWithMappings(
+                                    data       = parsed,
+                                    mappings   = mapping,
+                                    onProgress = { }
+                                )
+                                CsvImportHolder.clear()
+                                navController.popBackStack()
+                                navController.popBackStack()
+                                snackbarHostState.showSnackbar(
+                                    "${result.imported} transaction(s) imported" +
+                                            if (result.skipped > 0) ", ${result.skipped} skipped" else ""
+                                )
+                            } catch (e: Exception) {
+                                snackbarHostState.showSnackbar("Import failed: ${e.message}")
+                            }
+                        }
+                    }
+                )
+            }
         }
 
         /* ── CATEGORIES ────────────────────────────────────────────────────── */

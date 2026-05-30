@@ -24,25 +24,40 @@ import com.greenicephoenix.traceledger.core.ui.theme.SovereignViolet
  */
 object NotificationHelper {
 
-    const val CHANNEL_ID   = "daily_reminder"
+    const val CHANNEL_ID      = "daily_reminder"
+    const val CHANNEL_BACKUP  = "auto_backup"
     const val NOTIFICATION_ID = 1001
+    const val NOTIFICATION_BACKUP_ID = 1002
 
     /**
-     * Creates the notification channel for the daily reminder.
+     * Creates all notification channels used by the app.
      * Must be called before any notification can be posted on Android 8+.
      * Safe to call multiple times — Android ignores duplicate channel creation.
      */
     fun createChannel(context: Context) {
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            "Daily Reminder",                          // Channel name shown in Settings
-            NotificationManager.IMPORTANCE_DEFAULT     // Shows in shade, plays sound, no heads-up
-        ).apply {
-            description = "Remind you to log your daily transactions"
-        }
-
         val manager = context.getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(channel)
+
+        // Daily reminder channel
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_ID,
+                "Daily Reminder",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Remind you to log your daily transactions"
+            }
+        )
+
+        // Auto backup channel — LOW importance: no sound, just drawer entry
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_BACKUP,
+                "Auto Backup",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Notifies when a scheduled backup completes"
+            }
+        )
     }
 
     /**
@@ -75,5 +90,35 @@ object NotificationHelper {
 
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.notify(NOTIFICATION_ID, notification)
+    }
+
+    /**
+     * Posts a silent backup-complete notification.
+     * [fileName] is the name of the file that was written (shown in the body).
+     * Tapping opens the app.
+     */
+    fun postBackupSuccess(context: Context, fileName: String) {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_BACKUP)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setColor(SovereignViolet.toArgb())
+            .setContentTitle("Backup saved")
+            .setContentText(fileName)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager.notify(NOTIFICATION_BACKUP_ID, notification)
     }
 }

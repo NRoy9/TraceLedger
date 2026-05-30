@@ -112,6 +112,16 @@
                 android:resource="@xml/file_provider_paths" />
         </provider>
 
+        <!--
+            AutoBackupWorker is a CoroutineWorker run by WorkManager.
+            WorkManager handles scheduling, retries, and device restarts automatically.
+            No FOREGROUND_SERVICE permission needed — backup is a short background task.
+        -->
+        <service
+            android:name=".core.backup.AutoBackupWorker"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
     </application>
 
 </manifest>

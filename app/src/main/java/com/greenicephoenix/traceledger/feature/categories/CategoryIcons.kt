@@ -181,6 +181,18 @@ object CategoryIcons {
         // ──────────── GENERIC ─────────────────────────────────
         CategoryIconIds.WALLET to Icons.Filled.AccountBalanceWallet,
         CategoryIconIds.OTHER to Icons.Default.Category,
+
+        // ──────────── LEGACY — DO NOT REMOVE AFTER RELEASE ────
+        // These keys existed in v1.3.0 and may be persisted in
+        // user databases via custom categories. They are excluded
+        // from the picker (ids list uses CategoryIconIds only)
+        // but must stay here so existing categories render
+        // correctly rather than falling back to a generic icon.
+        "bakery"         to Icons.Filled.Cake,
+        "bus"            to Icons.Filled.DirectionsBus,
+        "gas"            to Icons.Filled.LocalFireDepartment,
+        "account_credit" to Icons.Filled.AccountBalance,
+        "default"        to Icons.Default.Category,
     )
 
     /**

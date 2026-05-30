@@ -5,7 +5,8 @@ import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -31,7 +32,6 @@ import com.greenicephoenix.traceledger.core.currency.CurrencyManager
 import com.greenicephoenix.traceledger.core.currency.NumberFormatManager
 import com.greenicephoenix.traceledger.core.datastore.NumberFormat
 import com.greenicephoenix.traceledger.core.datastore.SettingsDataStore
-import com.greenicephoenix.traceledger.core.export.ExportFormat
 import com.greenicephoenix.traceledger.core.importer.ImportPreview
 import com.greenicephoenix.traceledger.core.navigation.Routes
 import com.greenicephoenix.traceledger.core.notifications.ReminderScheduler
@@ -40,6 +40,7 @@ import com.greenicephoenix.traceledger.core.ui.theme.ThemeMode
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.ui.platform.LocalUriHandler
 import com.greenicephoenix.traceledger.core.util.AppLinks
@@ -84,16 +85,12 @@ private const val URL_TERMS   = "https://traceledger.pages.dev/terms.html"
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onBudgetsClick: () -> Unit,
-    onNavigate: (String) -> Unit,
+    onBudgetsClick:  () -> Unit,
+    onNavigate:      (String) -> Unit,
     smsPendingCount: Int = 0,
-    onExportSelected: (ExportFormat) -> Unit,
-    onExportUriReady: (ExportFormat, Uri) -> Unit,
-    onImportContinue: () -> Unit,
-    onImportUriReady: (Uri) -> Unit,
-    onImportPreviewRequested: suspend (Uri) -> ImportPreview,
-    onImportConfirmed: (Uri, (Int?) -> Unit) -> Unit,
-    onImportError: (String) -> Unit
+    onJsonImportPreviewRequested: suspend (Uri) -> ImportPreview,
+    onJsonImportConfirmed:        (Uri, (Int?) -> Unit) -> Unit,
+    onImportError:                (String) -> Unit
 ) {
     val context        = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -106,15 +103,17 @@ fun SettingsScreen(
     var importPreview       by remember { mutableStateOf<ImportPreview?>(null) }
     var showImportPreview   by remember { mutableStateOf(false) }
     var importProgress      by remember { mutableStateOf<Int?>(null) }
-    var pendingExportFormat by remember { mutableStateOf<ExportFormat?>(null) }
     var pendingImportType   by remember { mutableStateOf<ImportType?>(null) }
 
     var showCurrencySheet     by remember { mutableStateOf(false) }
-    var showExportSheet       by remember { mutableStateOf(false) }
-    var showImportSheet       by remember { mutableStateOf(false) }
     var showThemeSheet        by remember { mutableStateOf(false) }
     var showNumberFormatSheet by remember { mutableStateOf(false) }
     var showTimePicker        by remember { mutableStateOf(false) }
+
+    // ── Snackbar ──────────────────────────────────────────────────────────────
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // ── Auto backup observed state ────────────────────────────────────────────
 
     // ── Observed state ────────────────────────────────────────────────────────
     val currentCurrency  by CurrencyManager.currency.collectAsState()
@@ -162,296 +161,292 @@ fun SettingsScreen(
     }
 
     // ── File launchers ────────────────────────────────────────────────────────
-    val exportLauncher = rememberLauncherForActivityResult(CreateDocument("*/*")) { uri ->
-        if (uri != null && pendingExportFormat != null) {
-            onExportUriReady(pendingExportFormat!!, uri)
-        }
-        pendingExportFormat = null
-    }
+    // Two separate export launchers — one per MIME type.
 
-    val importLauncher = rememberLauncherForActivityResult(
+    // Folder picker for auto backup — user picks once, URI is persisted.
+    // ACTION_OPEN_DOCUMENT_TREE gives write access to a folder across app restarts.
+    // Separate JSON import launcher — strict MIME for JSON files
+    val importJsonLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
-        if (uri != null && pendingImportType != null) {
-            val type = pendingImportType ?: return@rememberLauncherForActivityResult
-            when (type) {
-                ImportType.JSON, ImportType.CSV -> {
-                    coroutineScope.launch {
-                        try {
-                            importPreview     = onImportPreviewRequested(uri)
-                            pendingImportUri  = uri
-                            showImportPreview = true
-                        } catch (e: Exception) {
-                            onImportError(e.message ?: "Invalid file")
-                        }
-                    }
+        if (uri != null) {
+            coroutineScope.launch {
+                try {
+                    importPreview     = onJsonImportPreviewRequested(uri)
+                    pendingImportUri  = uri
+                    pendingImportType = ImportType.JSON
+                    showImportPreview = true
+                } catch (e: Exception) {
+                    onImportError(e.message ?: "Invalid file")
                 }
             }
-            pendingImportType = null
         }
     }
 
-    // ── Main scrollable column ────────────────────────────────────────────────
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp)
-            .padding(top = 20.dp, bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(0.dp)
-    ) {
 
-        Text(
-            text     = "SETTINGS",
-            style    = MaterialTheme.typography.headlineMedium,
-            color    = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
 
-        // ── APPEARANCE ────────────────────────────────────────────────────────
-        SettingsSectionLabel("Appearance")
+    // ── Root layout — Box allows SnackbarHost overlay at bottom ──────────────
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(top = 20.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp)
+        ) {
 
-        SettingsRow(
-            icon     = Icons.Outlined.Palette,
-            iconTint = IconGreen,
-            iconBg   = BgGreen,
-            title    = "Theme",
-            value    = currentThemeLabel,
-            onClick  = { showThemeSheet = true }
-        )
-        SettingsRow(
-            icon     = Icons.Outlined.AttachMoney,
-            iconTint = IconGreen,
-            iconBg   = BgGreen,
-            title    = "Currency",
-            value    = "${currentCurrency.code} ${currentCurrency.symbol}",
-            onClick  = { showCurrencySheet = true }
-        )
-        SettingsRow(
-            icon     = Icons.Outlined.Tag,
-            iconTint = IconBlue,
-            iconBg   = BgBlue,
-            title    = "Number Format",
-            value    = numFormatLabel,
-            onClick  = { showNumberFormatSheet = true }
-        )
+            Text(
+                text     = "SETTINGS",
+                style    = MaterialTheme.typography.headlineMedium,
+                color    = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(bottom = 24.dp)
+            )
 
-        Spacer(Modifier.height(20.dp))
+            // ── APPEARANCE ────────────────────────────────────────────────────────
+            SettingsSectionLabel("Appearance")
 
-        // ── FINANCE ───────────────────────────────────────────────────────────
-        SettingsSectionLabel("Finance")
+            SettingsRow(
+                icon     = Icons.Outlined.Palette,
+                iconTint = IconGreen,
+                iconBg   = BgGreen,
+                title    = "Theme",
+                value    = currentThemeLabel,
+                onClick  = { showThemeSheet = true }
+            )
+            SettingsRow(
+                icon     = Icons.Outlined.AttachMoney,
+                iconTint = IconGreen,
+                iconBg   = BgGreen,
+                title    = "Currency",
+                value    = "${currentCurrency.code} ${currentCurrency.symbol}",
+                onClick  = { showCurrencySheet = true }
+            )
+            SettingsRow(
+                icon     = Icons.Outlined.Tag,
+                iconTint = IconBlue,
+                iconBg   = BgBlue,
+                title    = "Number Format",
+                value    = numFormatLabel,
+                onClick  = { showNumberFormatSheet = true }
+            )
 
-        SettingsRow(
-            icon     = Icons.Outlined.Category,
-            iconTint = IconGreen,
-            iconBg   = BgGreen,
-            title    = "Categories",
-            subtitle = "Expense & income",
-            onClick  = { onNavigate(Routes.CATEGORIES) }
-        )
-        SettingsRow(
-            icon     = Icons.Outlined.PieChart,
-            iconTint = IconAmber,
-            iconBg   = BgAmber,
-            title    = "Budgets",
-            subtitle = "Monthly limits",
-            onClick  = onBudgetsClick
-        )
-        SettingsRow(
-            icon     = Icons.Outlined.Repeat,
-            iconTint = IconBlue,
-            iconBg   = BgBlue,
-            title    = "Recurring",
-            subtitle = "Auto transactions",
-            onClick  = { onNavigate(Routes.RECURRING) }
-        )
-        SettingsRow(
-            icon     = Icons.Outlined.BookmarkBorder,
-            iconTint = IconPurple,
-            iconBg   = BgPurple,
-            title    = "Templates",
-            subtitle = "Saved transactions",
-            onClick  = { onNavigate(Routes.TEMPLATES) }
-        )
+            Spacer(Modifier.height(20.dp))
 
-        Spacer(Modifier.height(20.dp))
+            // ── FINANCE ───────────────────────────────────────────────────────────
+            SettingsSectionLabel("Finance")
 
-        // ── NOTIFICATIONS ─────────────────────────────────────────────────────
-        SettingsSectionLabel("Notifications")
+            SettingsRow(
+                icon     = Icons.Outlined.Category,
+                iconTint = IconGreen,
+                iconBg   = BgGreen,
+                title    = "Categories",
+                subtitle = "Expense & income",
+                onClick  = { onNavigate(Routes.CATEGORIES) }
+            )
+            SettingsRow(
+                icon     = Icons.Outlined.PieChart,
+                iconTint = IconAmber,
+                iconBg   = BgAmber,
+                title    = "Budgets",
+                subtitle = "Monthly limits",
+                onClick  = onBudgetsClick
+            )
+            SettingsRow(
+                icon     = Icons.Outlined.Repeat,
+                iconTint = IconBlue,
+                iconBg   = BgBlue,
+                title    = "Recurring",
+                subtitle = "Auto transactions",
+                onClick  = { onNavigate(Routes.RECURRING) }
+            )
+            SettingsRow(
+                icon     = Icons.Outlined.BookmarkBorder,
+                iconTint = IconPurple,
+                iconBg   = BgPurple,
+                title    = "Templates",
+                subtitle = "Saved transactions",
+                onClick  = { onNavigate(Routes.TEMPLATES) }
+            )
 
-        SettingsRowToggle(
-            icon     = Icons.Outlined.Notifications,
-            iconTint = IconAmber,
-            iconBg   = BgAmber,
-            title    = "Daily Reminder",
-            subtitle = if (reminderEnabled) reminderTimeLabel else "Remind you to log daily",
-            checked  = reminderEnabled,
-            onClick  = { if (reminderEnabled) showTimePicker = true },
-            onCheckedChange = { enabled ->
-                if (enabled) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        notificationPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            Spacer(Modifier.height(20.dp))
+
+            // ── NOTIFICATIONS ─────────────────────────────────────────────────────
+            SettingsSectionLabel("Notifications")
+
+            SettingsRowToggle(
+                icon     = Icons.Outlined.Notifications,
+                iconTint = IconAmber,
+                iconBg   = BgAmber,
+                title    = "Daily Reminder",
+                subtitle = if (reminderEnabled) reminderTimeLabel else "Remind you to log daily",
+                checked  = reminderEnabled,
+                onClick  = { if (reminderEnabled) showTimePicker = true },
+                onCheckedChange = { enabled ->
+                    if (enabled) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            notificationPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
+                            coroutineScope.launch {
+                                settingsStore.setReminderEnabled(true)
+                                ReminderScheduler.schedule(context, reminderHour, reminderMinute)
+                            }
+                        }
                     } else {
                         coroutineScope.launch {
-                            settingsStore.setReminderEnabled(true)
-                            ReminderScheduler.schedule(context, reminderHour, reminderMinute)
-                        }
-                    }
-                } else {
-                    coroutineScope.launch {
-                        settingsStore.setReminderEnabled(false)
-                        ReminderScheduler.cancel(context)
-                    }
-                }
-            }
-        )
-
-        Spacer(Modifier.height(20.dp))
-
-        // ── DATA ──────────────────────────────────────────────────────────────
-        SettingsSectionLabel("Data")
-
-        SettingsRow(
-            icon     = Icons.Outlined.FileUpload,
-            iconTint = IconBlue,
-            iconBg   = BgBlue,
-            title    = "Export Data",
-            subtitle = "JSON · CSV",
-            onClick  = { showExportSheet = true }
-        )
-        SettingsRow(
-            icon     = Icons.Outlined.FileDownload,
-            iconTint = IconGreen,
-            iconBg   = BgGreen,
-            title    = "Import Data",
-            subtitle = "Restore backup",
-            onClick  = { showImportSheet = true }
-        )
-
-        // ── Import Transactions row (v1.3.0) ──────────────────────────────────
-        // Uses teal colour to visually distinguish it from the green "Import Data"
-        // row above. The "value = NEW" shows in primary colour before the chevron,
-        // matching the existing SettingsRow signature exactly.
-        // Remove value = "NEW" in v1.4.0 once the feature is established.
-        SettingsRow(
-            icon     = Icons.Default.AccountBalance,
-            iconTint = IconTeal,
-            iconBg   = BgTeal,
-            title    = "Import Transactions",
-            subtitle = "Bank account & credit card statements • Support varies by format",
-            value    = "NEW",
-            onClick  = { onNavigate(Routes.IMPORT_HUB) }
-        )
-
-        SettingsRow(
-            icon     = Icons.Default.Sms,
-            iconTint = IconPurple,
-            iconBg   = BgPurple,
-            title    = "SMS Detection",
-            subtitle = "Auto-detect bank & wallet SMS",
-            value    = if (smsPendingCount > 0) "$smsPendingCount pending" else "NEW",
-            onClick  = { onNavigate(Routes.SMS_SETTINGS) }
-        )
-
-        Spacer(Modifier.height(20.dp))
-
-        // ── SYSTEM ────────────────────────────────────────────────────────
-        SettingsSectionLabel("System")
-
-        // What's New — navigates to the full changelog screen
-        SettingsRow(
-            icon     = Icons.Outlined.NewReleases,
-            iconTint = IconPurple,
-            iconBg   = BgPurple,
-            title    = "What's New",
-            subtitle = "v${BuildConfig.VERSION_NAME} release notes",
-            onClick  = { onNavigate(Routes.CHANGELOG) }
-        )
-
-        // Check for Updates — live subtitle + animated progress bar
-        CheckForUpdatesRow(
-            state   = updateState,
-            iconTint = IconBlue,
-            iconBg   = BgBlue,
-            onClick = {
-                if (updateState !is UpdateState.Checking) {
-                    coroutineScope.launch {
-                        updateState = UpdateState.Checking
-                        try {
-                            val result = withContext(Dispatchers.IO) { checkForUpdate() }
-                            updateState = if (result != null)
-                                UpdateState.Available(result)
-                            else
-                                UpdateState.UpToDate
-                        } catch (e: Exception) {
-                            updateState = UpdateState.Error(e.message ?: "Check failed")
+                            settingsStore.setReminderEnabled(false)
+                            ReminderScheduler.cancel(context)
                         }
                     }
                 }
-            }
-        )
+            )
 
-        SettingsRow(
-            icon     = Icons.Outlined.Language,
-            iconTint = IconBlue,
-            iconBg   = BgBlue,
-            title    = "Website",
-            subtitle = "traceledger.pages.dev",
-            onClick  = { uriHandler.openUri(AppLinks.WEBSITE) }
-        )
-        SettingsRow(
-            icon     = Icons.Outlined.PrivacyTip,
-            iconTint = IconBlue,
-            iconBg   = BgBlue,
-            title    = "Privacy Policy",
-            subtitle = "How we handle your data",
-            onClick  = { uriHandler.openUri(URL_PRIVACY) }
-        )
-        SettingsRow(
-            icon     = Icons.Outlined.Gavel,
-            iconTint = IconBlue,
-            iconBg   = BgBlue,
-            title    = "Terms of Use",
-            subtitle = "Usage terms and conditions",
-            onClick  = { uriHandler.openUri(URL_TERMS) }
-        )
+            Spacer(Modifier.height(20.dp))
 
-        Spacer(Modifier.height(20.dp))
+            // ── DATA ──────────────────────────────────────────────────────────────
+            SettingsSectionLabel("Data")
 
-        // ── APP ───────────────────────────────────────────────────────────
-        SettingsSectionLabel("App")
+            SettingsRow(
+                icon     = Icons.Outlined.SwapVert,
+                iconTint = IconBlue,
+                iconBg   = BgBlue,
+                title    = "Import / Export",
+                subtitle = "Backup, restore, CSV, auto backup",
+                onClick  = { onNavigate(Routes.IMPORT_EXPORT) }
+            )
 
-        SupportRow(onClick = { onNavigate(Routes.SUPPORT) })
+            // ── Import Transactions row (v1.3.0) ──────────────────────────────────
+            // Uses teal colour to visually distinguish it from the green "Import Data"
+            // row above. The "value = NEW" shows in primary colour before the chevron,
+            // matching the existing SettingsRow signature exactly.
+            // Remove value = "NEW" in v1.4.0 once the feature is established.
+            SettingsRow(
+                icon     = Icons.Default.AccountBalance,
+                iconTint = IconTeal,
+                iconBg   = BgTeal,
+                title    = "Import Transactions",
+                subtitle = "Bank account & credit card statements • Support varies by format",
+                value    = "NEW",
+                onClick  = { onNavigate(Routes.IMPORT_HUB) }
+            )
 
-        SettingsRow(
-            icon     = Icons.Outlined.Forum,
-            iconTint = IconGreen,
-            iconBg   = BgGreen,
-            title    = "Discord",
-            subtitle = "Join the community",
-            onClick  = { uriHandler.openUri(AppLinks.DISCORD) }
+            SettingsRow(
+                icon     = Icons.Default.Sms,
+                iconTint = IconPurple,
+                iconBg   = BgPurple,
+                title    = "SMS Detection",
+                subtitle = "Auto-detect bank & wallet SMS",
+                value    = if (smsPendingCount > 0) "$smsPendingCount pending" else "NEW",
+                onClick  = { onNavigate(Routes.SMS_SETTINGS) }
+            )
+
+            Spacer(Modifier.height(20.dp))
+
+            // ── SYSTEM ────────────────────────────────────────────────────────
+            SettingsSectionLabel("System")
+
+            // What's New — navigates to the full changelog screen
+            SettingsRow(
+                icon     = Icons.Outlined.NewReleases,
+                iconTint = IconPurple,
+                iconBg   = BgPurple,
+                title    = "What's New",
+                subtitle = "v${BuildConfig.VERSION_NAME} release notes",
+                onClick  = { onNavigate(Routes.CHANGELOG) }
+            )
+
+            // Check for Updates — live subtitle + animated progress bar
+            CheckForUpdatesRow(
+                state   = updateState,
+                iconTint = IconBlue,
+                iconBg   = BgBlue,
+                onClick = {
+                    if (updateState !is UpdateState.Checking) {
+                        coroutineScope.launch {
+                            updateState = UpdateState.Checking
+                            try {
+                                val result = withContext(Dispatchers.IO) { checkForUpdate() }
+                                updateState = if (result != null)
+                                    UpdateState.Available(result)
+                                else
+                                    UpdateState.UpToDate
+                            } catch (e: Exception) {
+                                updateState = UpdateState.Error(e.message ?: "Check failed")
+                            }
+                        }
+                    }
+                }
+            )
+
+            SettingsRow(
+                icon     = Icons.Outlined.Language,
+                iconTint = IconBlue,
+                iconBg   = BgBlue,
+                title    = "Website",
+                subtitle = "traceledger.pages.dev",
+                onClick  = { uriHandler.openUri(AppLinks.WEBSITE) }
+            )
+//            SettingsRow(
+//                icon     = Icons.Outlined.PrivacyTip,
+//                iconTint = IconBlue,
+//                iconBg   = BgBlue,
+//                title    = "Privacy Policy",
+//                subtitle = "How we handle your data",
+//                onClick  = { uriHandler.openUri(URL_PRIVACY) }
+//            )
+//            SettingsRow(
+//                icon     = Icons.Outlined.Gavel,
+//                iconTint = IconBlue,
+//                iconBg   = BgBlue,
+//                title    = "Terms of Use",
+//                subtitle = "Usage terms and conditions",
+//                onClick  = { uriHandler.openUri(URL_TERMS) }
+//            )
+
+            Spacer(Modifier.height(20.dp))
+
+            // ── APP ───────────────────────────────────────────────────────────
+            SettingsSectionLabel("App")
+
+            SupportRow(onClick = { onNavigate(Routes.SUPPORT) })
+
+            SettingsRow(
+                icon     = Icons.Outlined.Forum,
+                iconTint = IconGreen,
+                iconBg   = BgGreen,
+                title    = "Discord",
+                subtitle = "Join the community",
+                onClick  = { uriHandler.openUri(AppLinks.DISCORD) }
+            )
+            SettingsRow(
+                icon     = Icons.AutoMirrored.Outlined.HelpOutline,
+                iconTint = IconAmber,
+                iconBg   = BgAmber,
+                title    = "Help & FAQ",
+                subtitle = "Common questions & tips",
+                onClick  = { onNavigate(Routes.HELP) }
+            )
+            SettingsRow(
+                icon     = Icons.Outlined.Info,
+                iconTint = IconPurple,
+                iconBg   = BgPurple,
+                title    = "About",
+                subtitle = "v${BuildConfig.VERSION_NAME} · TraceLedger",
+                onClick  = { onNavigate(Routes.ABOUT) }
+            )
+
+        } // end Column
+
+        // Snackbar overlays at bottom of Box
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier  = Modifier.align(Alignment.BottomCenter)
         )
-        SettingsRow(
-            icon     = Icons.Outlined.HelpOutline,
-            iconTint = IconAmber,
-            iconBg   = BgAmber,
-            title    = "Help & FAQ",
-            subtitle = "Common questions & tips",
-            onClick  = { onNavigate(Routes.HELP) }
-        )
-        SettingsRow(
-            icon     = Icons.Outlined.Info,
-            iconTint = IconPurple,
-            iconBg   = BgPurple,
-            title    = "About",
-            subtitle = "v${BuildConfig.VERSION_NAME} · TraceLedger",
-            onClick  = { onNavigate(Routes.ABOUT) }
-        )
-    }
+    } // end Box
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Dialogs and Bottom Sheets — unchanged from previous version
+    // Dialogs and Bottom Sheets
     // ─────────────────────────────────────────────────────────────────────────
 
     if (showTimePicker) {
@@ -552,64 +547,6 @@ fun SettingsScreen(
         }
     }
 
-    if (showExportSheet) {
-        PickerBottomSheet(title = "Export Data", onDismiss = { showExportSheet = false }) {
-            Text(
-                text     = "Choose a format",
-                style    = MaterialTheme.typography.bodySmall,
-                color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            Spacer(Modifier.height(8.dp))
-            ExportOption(
-                title       = "JSON (recommended)",
-                description = "Full backup — accounts, categories, budgets, transactions",
-                onClick     = {
-                    showExportSheet     = false
-                    pendingExportFormat = ExportFormat.JSON
-                    exportLauncher.launch("TraceLedger-backup.json")
-                }
-            )
-            ExportOption(
-                title       = "CSV",
-                description = "Transactions only — for spreadsheets",
-                onClick     = {
-                    showExportSheet     = false
-                    pendingExportFormat = ExportFormat.CSV
-                    exportLauncher.launch("TraceLedger-transactions.csv")
-                }
-            )
-        }
-    }
-
-    if (showImportSheet) {
-        PickerBottomSheet(title = "Import Data", onDismiss = { showImportSheet = false }) {
-            ExportOption(
-                title       = "JSON (full restore)",
-                description = "Replaces all data with backup contents",
-                onClick     = {
-                    pendingImportType = ImportType.JSON
-                    showImportSheet   = false
-                    importLauncher.launch(arrayOf("application/json"))
-                }
-            )
-            ExportOption(
-                title       = "CSV (transactions only)",
-                description = "Adds transactions to existing accounts and categories",
-                onClick     = {
-                    pendingImportType = ImportType.CSV
-                    showImportSheet   = false
-                    importLauncher.launch(arrayOf("text/csv"))
-                }
-            )
-            Text(
-                text     = "CSV rows with unknown accounts or categories will be skipped.",
-                style    = MaterialTheme.typography.labelSmall,
-                color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-        }
-    }
 
     if (showImportPreview && importPreview != null) {
         ModalBottomSheet(onDismissRequest = {
@@ -638,11 +575,18 @@ fun SettingsScreen(
                     )
                 }
 
-                Text(
-                    text  = "JSON import will replace ALL existing data.",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
+                // Only show destructive warning for JSON imports
+                if (pendingImportType == ImportType.JSON) {
+                    Text(
+                        text  = "JSON import will replace ALL existing data.",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+
+
+
 
                 if (!canImport) {
                     Text(
@@ -669,7 +613,7 @@ fun SettingsScreen(
                         onClick = {
                             val uri = pendingImportUri ?: return@TextButton
                             showImportPreview = false
-                            onImportConfirmed(uri) { progress -> importProgress = progress }
+                            onJsonImportConfirmed(uri) { p -> importProgress = p }
                         }
                     ) {
                         Text(
@@ -725,6 +669,7 @@ fun SettingsScreen(
             onDismiss  = { updateState = UpdateState.Idle }
         )
     }
+
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

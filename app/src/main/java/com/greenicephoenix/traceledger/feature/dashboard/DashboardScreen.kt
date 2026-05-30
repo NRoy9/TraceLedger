@@ -355,7 +355,7 @@ fun DashboardScreen(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
                 )
-                if (accounts.size > 4) {
+                if (accounts.size > 0) {
                     Text(
                         text  = "See all",
                         style = MaterialTheme.typography.labelSmall,

@@ -4,10 +4,13 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ExportEnvelope(
-    val meta: ExportMeta,
-    val accounts: List<AccountExport>,
+    val meta:       ExportMeta,
+    val accounts:   List<AccountExport>,
     val categories: List<CategoryExport>,
-    val budgets: List<BudgetExport>,
+    val budgets:    List<BudgetExport>,
+    val recurring:  List<RecurringExport>  = emptyList(),
+    val templates:  List<TemplateExport>   = emptyList(),
+    val settings:   SettingsExport?        = null,
     val transactions: List<TransactionExport>
 )
 
@@ -58,4 +61,38 @@ data class TransactionExport(
     val categoryId: String?,
     val note: String?,
     val createdAtEpoch: Long
+)
+@Serializable
+data class RecurringExport(
+    val id:                String,
+    val type:              String,
+    val amount:            String,
+    val fromAccountId:     String?,
+    val toAccountId:       String?,
+    val categoryId:        String?,
+    val note:              String?,
+    val startDate:         String,
+    val endDate:           String?,
+    val frequency:         String,
+    val lastGeneratedDate: String?,
+    val isActive:          Boolean
+)
+
+@Serializable
+data class TemplateExport(
+    val id:            String,
+    val name:          String,
+    val type:          String,
+    val amount:        String?,
+    val fromAccountId: String?,
+    val toAccountId:   String?,
+    val categoryId:    String?,
+    val notes:         String?,
+    val createdAt:     Long
+)
+
+@Serializable
+data class SettingsExport(
+    val currencyCode: String?,
+    val numberFormat: String?
 )

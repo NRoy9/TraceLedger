@@ -4,8 +4,16 @@ import android.app.Application
 import com.greenicephoenix.traceledger.core.currency.NumberFormatManager
 import com.greenicephoenix.traceledger.core.di.AppContainer
 import com.greenicephoenix.traceledger.core.notifications.NotificationHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class TraceLedgerApp : Application() {
+
+    // Application-scoped coroutine scope — survives configuration changes,
+    // cancelled only when the process is killed.
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     lateinit var container: AppContainer
         private set
@@ -15,14 +23,16 @@ class TraceLedgerApp : Application() {
 
         container = AppContainer(this)
 
-        // Initialise NumberFormatManager so CurrencyFormatter can read the
-        // user's grouping preference (Indian vs International) from the first frame.
-        // This mirrors how CurrencyManager is initialised in MainActivity.
         NumberFormatManager.init(this)
 
-        // Create the daily reminder notification channel.
-        // This must happen before any notification can be posted on Android 8+.
-        // It's safe to call on every launch — Android ignores duplicate channel creation.
+        // Create all notification channels (daily reminder + auto backup).
         NotificationHelper.createChannel(this)
+
+        // Re-register the periodic backup WorkManager job on every app start.
+        // WorkManager can lose scheduled jobs after APK updates on some devices.
+        // This is a no-op if backup is disabled or no folder has been chosen.
+        appScope.launch {
+            container.scheduleBackupIfEnabled()
+        }
     }
 }

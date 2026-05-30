@@ -42,5 +42,5 @@ object CategorySeed {
         CategoryEntity(id = "inv_real_estate",   name = "Real Estate",   type = "INVESTMENT", color = 0xFF4527A0, icon = "real_estate"),
         CategoryEntity(id = "inv_retirement",    name = "Retirement",    type = "INVESTMENT", color = 0xFF558B2F, icon = "retirement"),
         CategoryEntity(id = "inv_other",         name = "Other",         type = "INVESTMENT", color = 0xFF546E7A, icon = "other"),
-        )
+    )
 }

@@ -14,8 +14,8 @@ android {
         applicationId = "com.greenicephoenix.traceledger"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "1.3.3"
+        versionCode = 7
+        versionName = "1.4.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("boolean", "IS_PLAY_STORE_BUILD", "false")
 
@@ -99,6 +99,7 @@ dependencies {
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.work.runtime)   // WorkManager — periodic auto backup
     implementation(libs.pdfbox)
     implementation(libs.compose.charts)
 
@@ -129,4 +130,5 @@ dependencies {
     implementation("org.apache.poi:poi-ooxml:5.2.5")
     implementation("org.apache.logging.log4j:log4j-api:2.23.1")
     implementation("org.apache.xmlbeans:xmlbeans:5.2.1")
+    implementation("androidx.documentfile:documentfile:1.0.1")
 }
