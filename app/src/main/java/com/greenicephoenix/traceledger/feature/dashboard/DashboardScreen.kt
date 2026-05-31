@@ -568,14 +568,22 @@ fun DashboardAccountCard(account: AccountUiModel, onClick: () -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(account.type.icon(), null, tint = Color(account.color), modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(10.dp))
-                Text(
-                    text     = account.name,
-                    color    = MaterialTheme.colorScheme.onBackground,
-                    style    = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text     = account.name,
+                        color    = MaterialTheme.colorScheme.onBackground,
+                        style    = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (!account.lastFourDigits.isNullOrBlank()) {
+                        Text(
+                            text  = "••••${account.lastFourDigits}",
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.45f),
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                }
                 IncludedBadge(isIncluded = account.includeInTotal)
             }
 

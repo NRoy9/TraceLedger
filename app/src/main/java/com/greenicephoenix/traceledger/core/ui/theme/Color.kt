@@ -134,3 +134,31 @@ val WarningBannerDark  = Color(0xFF4A3310)
 // Error banners
 val ErrorBannerLight   = Color(0xFFFFEBEE)
 val ErrorBannerDark    = Color(0xFF4A1F1F)
+
+// ─────────────────────────────────────────────────────────────
+// FINANCIAL SEMANTIC TOKENS
+// These are the single source of truth for transaction type colors.
+// Use these everywhere — never hardcode Color(0xFF27AE60) in a screen.
+// ─────────────────────────────────────────────────────────────
+
+val IncomeGreen      = Color(0xFF27AE60)   // = SuccessGreen — income amounts, income cards
+val ExpenseRed       = Color(0xFFE53935)   // = ErrorRed — expense amounts, expense cards
+val InvestmentGold   = Color(0xFFB8860B)   // investment amounts, investment cards
+val TransferBlue     = Color(0xFF2196F3)   // transfer transactions
+
+// On-color tokens (text/icon on top of the above backgrounds)
+val OnIncomeGreen    = Color(0xFFFFFFFF)
+val OnExpenseRed     = Color(0xFFFFFFFF)
+val OnInvestmentGold = Color(0xFFFFFFFF)
+val OnTransferBlue   = Color(0xFFFFFFFF)
+
+// Muted container variants (for chips, badges, light backgrounds)
+val IncomeContainer    = Color(0xFF1A4D2E)   // dark mode
+val ExpenseContainer   = Color(0xFF4A1010)   // dark mode
+val InvestmentContainer = Color(0xFF3D2E00)  // dark mode
+val TransferContainer  = Color(0xFF0D2A40)   // dark mode
+
+val IncomeContainerLight    = Color(0xFFCCF0DC)
+val ExpenseContainerLight   = Color(0xFFFFDAD6)
+val InvestmentContainerLight = Color(0xFFFFF3CD)
+val TransferContainerLight  = Color(0xFFDCEEFB)

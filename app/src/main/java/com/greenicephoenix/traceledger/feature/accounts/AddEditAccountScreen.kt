@@ -21,7 +21,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.greenicephoenix.traceledger.core.ui.theme.AccountColors
-import com.greenicephoenix.traceledger.core.ui.theme.NothingRed
 import com.greenicephoenix.traceledger.domain.model.AccountType
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.text.style.TextAlign
@@ -97,6 +96,9 @@ fun AddEditAccountScreen(
     var creditLimit by remember { mutableStateOf("") }
     var billingDay by remember { mutableStateOf("") }
     var dueDay by remember { mutableStateOf("") }
+    var lastFourDigits by remember(editKey) {
+        mutableStateOf(existingAccount?.lastFourDigits ?: "")
+    }
 
     // ---------------- SCAFFOLD ----------------
 
@@ -155,7 +157,8 @@ fun AddEditAccountScreen(
                             type = accountType,
                             includeInTotal = includeInTotal,
                             details = details.takeIf { it.isNotBlank() },
-                            color = selectedColor.toArgb().toLong()
+                            color = selectedColor.toArgb().toLong(),
+                            lastFourDigits = lastFourDigits.trim().takeIf { it.isNotBlank() }  // ← new
                         )
                         Log.d(
                             "ACCOUNT_COLOR",
@@ -220,6 +223,8 @@ fun AddEditAccountScreen(
                                 onIncludeInTotalChange = { includeInTotal = it },
                                 details = details,
                                 onDetailsChange = { details = it },
+                                lastFourDigits         = lastFourDigits,
+                                onLastFourDigitsChange = { lastFourDigits = it },
                                 showCreditCardDetails = showCreditCardDetails,
                                 onToggleCreditCardDetails = {
                                     showCreditCardDetails = !showCreditCardDetails
@@ -307,6 +312,8 @@ private fun AddAccountFormContent(
     onIncludeInTotalChange: (Boolean) -> Unit,
     details: String,
     onDetailsChange: (String) -> Unit,
+    lastFourDigits: String,                     // ← new
+    onLastFourDigitsChange: (String) -> Unit,   // ← new
     showCreditCardDetails: Boolean,
     onToggleCreditCardDetails: () -> Unit,
     creditLimit: String,
@@ -335,6 +342,32 @@ private fun AddAccountFormContent(
         BalanceField(balance, onBalanceChange)
 
         NotesField(details, onDetailsChange)
+
+        // Last four digits — shown for all account types.
+// Label adapts: "Last 4 digits" for bank/wallet, "Card last 4" for credit card.
+        OutlinedTextField(
+            value         = lastFourDigits,
+            onValueChange = { new ->
+                // Only allow up to 4 digits
+                if (new.length <= 4 && new.all { it.isDigit() }) {
+                    onLastFourDigitsChange(new)
+                }
+            },
+            modifier      = Modifier.fillMaxWidth(),
+            label         = {
+                Text(
+                    if (accountType == AccountType.CREDIT_CARD)
+                        "Card last 4 digits (optional)"
+                    else
+                        "Account last 4 digits (optional)"
+                )
+            },
+            singleLine    = true,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.NumberPassword,  // shows numeric keypad, masks nothing
+                imeAction    = ImeAction.Next
+            )
+        )
 
         IncludeInTotalRow(includeInTotal, onIncludeInTotalChange)
 

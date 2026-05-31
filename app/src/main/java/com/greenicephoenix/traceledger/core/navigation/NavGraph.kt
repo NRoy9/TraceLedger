@@ -588,18 +588,20 @@ fun TraceLedgerNavGraph(
                 onAddCategory   = { navController.navigate(Routes.ADD_CATEGORY) },
                 onCategoryClick = { category ->
                     navController.navigate(Routes.EDIT_CATEGORY.replace("{categoryId}", category.id))
-                }
+                },
+                onDeleteCategory = { id -> categoriesViewModel.deleteCategory(id) }
             )
         }
 
         composable(Routes.ADD_CATEGORY) {
             AddEditCategoryScreen(
-                existingCategory = null,
+                existingCategory = null,             // always null — this is the ADD flow
                 onCancel = { navController.popBackStack() },
                 onSave   = { newCategory ->
                     categoriesViewModel.addCategory(newCategory)
                     navController.popBackStack()
                 }
+                // onDelete intentionally omitted — no delete button on add screen
             )
         }
 
@@ -611,9 +613,13 @@ fun TraceLedgerNavGraph(
             val categoryToEdit = categories.firstOrNull { it.id == categoryId }
             AddEditCategoryScreen(
                 existingCategory = categoryToEdit,
-                onCancel = { navController.popBackStack() },
-                onSave   = { updatedCategory ->
+                onCancel  = { navController.popBackStack() },
+                onSave    = { updatedCategory ->
                     categoriesViewModel.updateCategory(updatedCategory)
+                    navController.popBackStack()
+                },
+                onDelete  = { categoryId ->
+                    categoriesViewModel.deleteCategory(categoryId)
                     navController.popBackStack()
                 }
             )

@@ -55,7 +55,8 @@ class AutoBackupWorker(
             val database      = TraceLedgerDatabase.getInstance(applicationContext)
             val exportService = ExportService(
                 database        = database,
-                contentResolver = applicationContext.contentResolver
+                contentResolver = applicationContext.contentResolver,
+                settingsStore   = settingsStore   // ← add this line
             )
 
             val result = exportService.exportJsonToFolder(

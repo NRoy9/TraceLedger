@@ -19,6 +19,15 @@ interface CategoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(category: CategoryEntity)
 
+    // UPDATE-only — use for renaming/editing existing categories.
+    // Does NOT delete-then-insert, so FK constraints on transactions are safe.
+    @Query("""
+        UPDATE categories 
+        SET name = :name, color = :color, icon = :icon 
+        WHERE id = :id
+    """)
+    suspend fun update(id: String, name: String, color: Long, icon: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(categories: List<CategoryEntity>)
 

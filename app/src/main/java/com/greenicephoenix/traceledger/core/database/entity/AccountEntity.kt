@@ -10,8 +10,9 @@ data class AccountEntity(
     val id: String,
     val name: String,
     val balance: BigDecimal,
-    val type: String,           // AccountType.name
+    val type: String,
     val includeInTotal: Boolean,
     val details: String?,
-    val color: Long
+    val color: Long,
+    val lastFourDigits: String? = null   // ← new, nullable, default null for existing rows
 )

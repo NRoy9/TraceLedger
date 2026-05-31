@@ -187,3 +187,42 @@ object TraceLedgerThemeExtras {
         @Composable
         get() = LocalExtraColors.current.errorBanner
 }
+
+/**
+ * Financial semantic color accessors.
+ * These are theme-aware — always use these in screens, never raw Color values.
+ *
+ * Usage:
+ *   Text(color = TraceLedgerColors.income)
+ *   Box(modifier = Modifier.background(TraceLedgerColors.expenseContainer))
+ */
+object TraceLedgerColors {
+
+    val income: Color
+        @Composable get() = IncomeGreen
+
+    val expense: Color
+        @Composable get() = ExpenseRed
+
+    val investment: Color
+        @Composable get() = InvestmentGold
+
+    val transfer: Color
+        @Composable get() = TransferBlue
+
+    val incomeContainer: Color
+        @Composable get() = if (MaterialTheme.colorScheme.background == LightBackground)
+            IncomeContainerLight else IncomeContainer
+
+    val expenseContainer: Color
+        @Composable get() = if (MaterialTheme.colorScheme.background == LightBackground)
+            ExpenseContainerLight else ExpenseContainer
+
+    val investmentContainer: Color
+        @Composable get() = if (MaterialTheme.colorScheme.background == LightBackground)
+            InvestmentContainerLight else InvestmentContainer
+
+    val transferContainer: Color
+        @Composable get() = if (MaterialTheme.colorScheme.background == LightBackground)
+            TransferContainerLight else TransferContainer
+}

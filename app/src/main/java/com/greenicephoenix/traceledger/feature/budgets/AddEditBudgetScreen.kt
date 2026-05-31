@@ -4,17 +4,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import com.greenicephoenix.traceledger.TraceLedgerApp
@@ -23,8 +19,10 @@ import com.greenicephoenix.traceledger.feature.budgets.data.BudgetEntity
 import java.time.YearMonth
 import java.util.UUID
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.luminance
+import com.greenicephoenix.traceledger.core.ui.components.TLEditorTopBar
+import com.greenicephoenix.traceledger.core.ui.components.TLDangerButton
+import com.greenicephoenix.traceledger.core.ui.components.TLDivider
+import com.greenicephoenix.traceledger.core.ui.theme.Dimens
 import kotlinx.coroutines.launch
 import com.greenicephoenix.traceledger.domain.model.CategoryType
 import com.greenicephoenix.traceledger.feature.addtransaction.CategorySelector
@@ -72,20 +70,6 @@ fun AddEditBudgetScreen(
 
     val scope = rememberCoroutineScope()
 
-    val isLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
-
-    val surfaceGradient = if (isLight) {
-        listOf(
-            MaterialTheme.colorScheme.surface,
-            MaterialTheme.colorScheme.surface
-        )
-    } else {
-        listOf(
-            Color(0xFF1A1A1A),
-            Color(0xFF0F0F0F)
-        )
-    }
-
     Scaffold { padding ->
 
         Column(
@@ -97,78 +81,31 @@ fun AddEditBudgetScreen(
         ) {
 
             /* ---------- HEADER ---------- */
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(44.dp)
-                    .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Cancel",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                Text(
-                    text = if (budgetId == null) "Add Budget" else "Edit Budget",
-                    modifier = Modifier.weight(1f),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                if (budgetId != null) {
-                    Text(
-                        text = "Editing existing budget",
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
-
-                IconButton(
-                    enabled = isValid,
-                    onClick = {
-
-                        val isDuplicate = existingBudgets.any {
-                            it.categoryId == selectedCategoryId &&
-                                    it.month == month &&
-                                    it.budgetId != budgetId
-                        }
-
-                        if (isDuplicate) {
-                            duplicateError = true
-                            return@IconButton
-                        }
-
-                        val budget = BudgetEntity(
-                            id = budgetId ?: UUID.randomUUID().toString(),
-                            categoryId = selectedCategoryId!!,
-                            limitAmount = limit.toBigDecimal(),
-                            month = selectedMonth,
-                            isActive = true
-                        )
-
-                        scope.launch {
-                            app.container.budgetRepository.upsertBudget(budget)
-                            onBack()
-                        }
+            TLEditorTopBar(
+                title   = if (budgetId == null) "Add Budget" else "Edit Budget",
+                canSave = isValid,
+                onClose = onBack,
+                onSave  = {
+                    val isDuplicate = existingBudgets.any {
+                        it.categoryId == selectedCategoryId &&
+                                it.month == month &&
+                                it.budgetId != budgetId
                     }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Save",
-                        tint = if (isValid) MaterialTheme.colorScheme.primary else Color.Gray
+                    if (isDuplicate) { duplicateError = true; return@TLEditorTopBar }
+                    val budget = BudgetEntity(
+                        id          = budgetId ?: UUID.randomUUID().toString(),
+                        categoryId  = selectedCategoryId!!,
+                        limitAmount = limit.toBigDecimal(),
+                        month       = selectedMonth,
+                        isActive    = true
                     )
+                    scope.launch {
+                        app.container.budgetRepository.upsertBudget(budget)
+                        onBack()
+                    }
                 }
-            }
-
-            HorizontalDivider(
-                Modifier,
-                DividerDefaults.Thickness,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
             )
+            HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
 
             /* ---------- CONTENT ---------- */
             Box(
@@ -180,137 +117,87 @@ fun AddEditBudgetScreen(
                 Card(
                     modifier = Modifier
                         .padding(top = 24.dp)
-                        .padding(horizontal = 16.dp)
+                        .padding(horizontal = Dimens.md)
                         .fillMaxWidth(),
-                    shape = RoundedCornerShape(28.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-                    elevation = CardDefaults.cardElevation(0.dp)
+                    shape  = RoundedCornerShape(28.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
-                    Box(
-                        modifier = Modifier.background(
-                            brush = Brush.verticalGradient(surfaceGradient),
-                            shape = RoundedCornerShape(28.dp)
-                        )
+                    Column(
+                        modifier            = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(20.dp)
+                        // Month selector row (unchanged content)
+                        Row(
+                            modifier              = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment     = Alignment.CenterVertically
                         ) {
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                            IconButton(
+                                onClick = { if (!isEditMode) selectedMonth = selectedMonth.minusMonths(1) },
+                                enabled = !isEditMode
                             ) {
-                                IconButton(
-                                    onClick = {
-                                        if (!isEditMode) {
-                                            selectedMonth = selectedMonth.minusMonths(1)
-                                        }
-                                    },
-                                    enabled = !isEditMode
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.ChevronLeft,
-                                        contentDescription = "Previous Month",
-                                        tint = if (isEditMode) Color.Gray else MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-
-                                Text(
-                                    text = selectedMonth.month.name.lowercase()
-                                        .replaceFirstChar { it.uppercase() } + " " + selectedMonth.year,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-
-                                if (isEditMode) {
-                                    Text(
-                                        text = "Month locked",
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                }
-
-                                IconButton(
-                                    onClick = {
-                                        if (!isEditMode) {
-                                            selectedMonth = selectedMonth.plusMonths(1)
-                                        }
-                                    },
-                                    enabled = !isEditMode
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.ChevronRight,
-                                        contentDescription = "Next Month",
-                                        tint = if (isEditMode) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                            }
-
-                            if (duplicateError) {
-                                Text(
-                                    text = "A budget for this category already exists for this month",
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodySmall
+                                Icon(
+                                    Icons.Default.ChevronLeft, "Previous Month",
+                                    tint = if (isEditMode) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                                    else MaterialTheme.colorScheme.onSurface
                                 )
                             }
-
-                            /* ---------- CATEGORY (BOTTOM SHEET) ---------- */
-                            CategorySelector(
-                                categories = categories.filter { category ->
-                                    budgetId != null || category.id !in usedCategoryIdsForMonth
-                                },
-                                type = CategoryType.EXPENSE,
-                                selectedCategoryId = selectedCategoryId,
-                                onSelect = {
-                                    selectedCategoryId = it
-                                    duplicateError = false
-                                }
+                            Text(
+                                text  = selectedMonth.month.name.lowercase().replaceFirstChar { it.uppercase() } +
+                                        " " + selectedMonth.year,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                style = MaterialTheme.typography.bodyMedium
                             )
-
-                            /* ---------- MONTHLY LIMIT ---------- */
-                            OutlinedTextField(
-                                value = limit,
-                                onValueChange = { limit = it },
-                                label = { Text("Monthly Limit") },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true
-                            )
-
-                            /* ---------- DELETE BUTTON ---------- */
-                            if (budgetId != null) {
-
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                HorizontalDivider(
-                                    thickness = 0.5.dp,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                            if (isEditMode) {
+                                Text(
+                                    text  = "Month locked",
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                    style = MaterialTheme.typography.labelSmall
                                 )
-
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                OutlinedButton(
-                                    onClick = {
-                                        showDeleteConfirm = true
-                                    },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(48.dp),
-                                    shape = RoundedCornerShape(24.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        contentColor = NothingRed
-                                    ),
-                                    border = ButtonDefaults.outlinedButtonBorder.copy(
-                                        brush = SolidColor(NothingRed)
-                                    )
-                                ) {
-                                    Text(
-                                        text = "Delete budget",
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
                             }
+                            IconButton(
+                                onClick = { if (!isEditMode) selectedMonth = selectedMonth.plusMonths(1) },
+                                enabled = !isEditMode
+                            ) {
+                                Icon(
+                                    Icons.Default.ChevronRight, "Next Month",
+                                    tint = if (isEditMode) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                                    else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+
+                        if (duplicateError) {
+                            Text(
+                                text  = "A budget for this category already exists for this month",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+
+                        CategorySelector(
+                            categories         = categories.filter { category ->
+                                budgetId != null || category.id !in usedCategoryIdsForMonth
+                            },
+                            type               = CategoryType.EXPENSE,
+                            selectedCategoryId = selectedCategoryId,
+                            onSelect           = { selectedCategoryId = it; duplicateError = false }
+                        )
+
+                        OutlinedTextField(
+                            value         = limit,
+                            onValueChange = { limit = it },
+                            label         = { Text("Monthly Limit") },
+                            modifier      = Modifier.fillMaxWidth(),
+                            singleLine    = true
+                        )
+
+                        if (budgetId != null) {
+                            TLDivider()
+                            TLDangerButton(
+                                text    = "DELETE BUDGET",
+                                onClick = { showDeleteConfirm = true }
+                            )
                         }
                     }
                 }

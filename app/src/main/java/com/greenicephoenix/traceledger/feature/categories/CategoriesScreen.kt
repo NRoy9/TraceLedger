@@ -30,7 +30,8 @@ fun CategoriesScreen(
     viewModel: CategoriesViewModel,
     onBack: () -> Unit,
     onAddCategory: () -> Unit,
-    onCategoryClick: (CategoryUiModel) -> Unit
+    onCategoryClick: (CategoryUiModel) -> Unit,
+    onDeleteCategory: (String) -> Unit   // wired to viewModel.deleteCategory
 ) {
 
     var selectedType by remember {

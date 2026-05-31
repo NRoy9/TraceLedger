@@ -28,13 +28,15 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import com.greenicephoenix.traceledger.domain.model.CategoryType
 import com.greenicephoenix.traceledger.domain.model.CategoryUiModel
+import androidx.compose.material.icons.filled.Delete
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditCategoryScreen(
     existingCategory: CategoryUiModel? = null,
     onCancel: () -> Unit,
-    onSave: (CategoryUiModel) -> Unit
+    onSave: (CategoryUiModel) -> Unit,
+    onDelete: ((String) -> Unit)? = null   // null = no delete button shown
 ) {
 
     val isEditMode = existingCategory != null
@@ -97,6 +99,8 @@ fun AddEditCategoryScreen(
 
     val layoutDirection = LocalLayoutDirection.current
 
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
@@ -121,52 +125,40 @@ fun AddEditCategoryScreen(
                     .padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
                 IconButton(onClick = onCancel) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
-                        tint = MaterialTheme.colorScheme.onBackground
-                    )
+                    Icon(Icons.Default.Close, "Close", tint = MaterialTheme.colorScheme.onBackground)
                 }
-
                 Text(
-                    text =
-                        if (isEditMode)
-                            "Edit Category"
-                        else
-                            "Add Category",
+                    text = if (isEditMode) "Edit Category" else "Add Category",
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onBackground
                 )
-
-                IconButton(
-                    enabled = isValid,
-                    onClick = {
-
-                        val category = CategoryUiModel(
-                            id =
-                                existingCategory?.id
-                                    ?: java.util.UUID.randomUUID().toString(),
-                            name = name.trim(),
-                            type = type,
-                            color = selectedColor.toArgb().toLong(),
-                            icon = selectedIcon
+                // Delete button — only in edit mode when onDelete is provided
+                if (isEditMode && onDelete != null) {
+                    IconButton(onClick = { showDeleteConfirm = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
                         )
-
-                        onSave(category)
                     }
-                ) {
-
+                }
+                IconButton(enabled = isValid, onClick = {
+                    val category = CategoryUiModel(
+                        id    = existingCategory?.id ?: java.util.UUID.randomUUID().toString(),
+                        name  = name.trim(),
+                        type  = type,
+                        color = selectedColor.toArgb().toLong(),
+                        icon  = selectedIcon
+                    )
+                    onSave(category)
+                }) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Save",
-                        tint =
-                            if (isValid)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+                        tint = if (isValid) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
                     )
                 }
             }
@@ -278,6 +270,38 @@ fun AddEditCategoryScreen(
                 }
             }
         }
+    }
+
+    // Delete confirmation dialog — shown when user taps the delete icon
+    if (showDeleteConfirm && existingCategory != null && onDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            containerColor   = MaterialTheme.colorScheme.surface,
+            title = {
+                Text("Delete category?", color = MaterialTheme.colorScheme.onSurface)
+            },
+            text = {
+                Text(
+                    "This will permanently remove \"${existingCategory.name}\". " +
+                            "If transactions use this category, deletion will be blocked and " +
+                            "you will see an explanation.",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    onDelete(existingCategory.id)
+                }) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurface)
+                }
+            }
+        )
     }
 }
 

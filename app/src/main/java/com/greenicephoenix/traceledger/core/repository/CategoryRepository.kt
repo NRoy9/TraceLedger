@@ -29,4 +29,8 @@ class CategoryRepository(private val dao: CategoryDao) {
     suspend fun seedIfEmpty(defaults: List<CategoryEntity>) {
         if (dao.count() == 0) dao.insertAll(defaults)
     }
+
+    // Add after upsert():
+    suspend fun update(id: String, name: String, color: Long, icon: String) =
+        dao.update(id, name, color, icon)
 }

@@ -18,8 +18,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.greenicephoenix.traceledger.core.currency.CurrencyFormatter
 import com.greenicephoenix.traceledger.core.currency.CurrencyManager
-import com.greenicephoenix.traceledger.core.ui.theme.NothingRed
-import com.greenicephoenix.traceledger.core.ui.theme.SuccessGreen
+import com.greenicephoenix.traceledger.core.ui.components.TLTypeColor
 import com.greenicephoenix.traceledger.domain.model.AccountUiModel
 import com.greenicephoenix.traceledger.domain.model.CategoryUiModel
 import com.greenicephoenix.traceledger.domain.model.TransactionType
@@ -147,7 +146,7 @@ fun TemplatesScreen(
                     onDelete(target.id)
                     deleteTarget = null
                 }) {
-                    Text("Delete", color = NothingRed)
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
@@ -204,12 +203,7 @@ private fun TemplateCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Type indicator dot
-            val typeColor = when (template.type) {
-                TransactionType.EXPENSE  -> NothingRed
-                TransactionType.INCOME   -> SuccessGreen
-                TransactionType.TRANSFER -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                TransactionType.INVESTMENT -> Color(0xFFFFB300)
-            }
+            val typeColor = TLTypeColor(template.type)
             Box(
                 modifier = Modifier
                     .size(8.dp)

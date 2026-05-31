@@ -399,7 +399,7 @@ object BuiltInSmsRules {
             // Utilities & Bills
             lower.containsAny("bescom", "tpddl", "msedcl", "electricity",
                 "water bill", "gas bill", "piped gas", "adani gas",
-                "mahanagar gas", "indane", "bharat gas", "hp gas") -> "Utilities"
+                "mahanagar gas", "indane", "bharat gas", "hp gas") -> "Utilities & Bills"
 
             // Mobile & Internet
             lower.containsAny("airtel", "jio", "vi ", "vodafone",
@@ -419,11 +419,6 @@ object BuiltInSmsRules {
             // Insurance
             lower.containsAny("lic", "policybazaar", "insuranc",
                 "premium", "life insurance", "health insurance") -> "Insurance"
-
-            // Investments
-            lower.containsAny("zerodha", "groww", "upstox", "paytm money",
-                "mutual fund", "sip", "nps", "ppf", "fd maturity",
-                "dividend", "interest credit") -> "Investments"
 
             // Income patterns
             lower.containsAny("salary", "payroll", "wages") -> "Salary"

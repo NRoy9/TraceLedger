@@ -270,7 +270,12 @@ private fun AccountRowCard(
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text  = account.type.name,
+                    text  = buildString {
+                        append(account.type.name)
+                        if (!account.lastFourDigits.isNullOrBlank()) {
+                            append("  ••••${account.lastFourDigits}")
+                        }
+                    },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                 )

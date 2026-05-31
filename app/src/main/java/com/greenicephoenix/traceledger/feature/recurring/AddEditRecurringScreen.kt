@@ -33,8 +33,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import com.greenicephoenix.traceledger.core.currency.CurrencyFormatter
 import com.greenicephoenix.traceledger.core.currency.CurrencyManager
 import com.greenicephoenix.traceledger.core.database.entity.RecurringTransactionEntity
-import com.greenicephoenix.traceledger.core.ui.theme.NothingRed
-import com.greenicephoenix.traceledger.core.ui.theme.SuccessGreen
+import com.greenicephoenix.traceledger.core.ui.components.TLTypeColor
 import com.greenicephoenix.traceledger.domain.model.TransactionType
 import com.greenicephoenix.traceledger.domain.model.AccountUiModel
 import com.greenicephoenix.traceledger.domain.model.CategoryUiModel
@@ -483,75 +482,6 @@ private fun FrequencySelector(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun RecurringDateSelector(
-    label: String,
-    date: LocalDate?,
-    allowClear: Boolean,
-    onDateSelected: (LocalDate) -> Unit,
-    onClear: () -> Unit
-) {
-    var showPicker by remember { mutableStateOf(false) }
-
-    val pickerState = rememberDatePickerState(
-        initialSelectedDateMillis = date?.toEpochDay()?.times(86_400_000)
-    )
-
-    val interactionSource = remember { MutableInteractionSource() }
-
-    OutlinedTextField(
-        value = date?.toString() ?: "No end date",
-        onValueChange = {},
-        readOnly = true,
-        label = { Text(label) },
-        interactionSource = interactionSource,
-        modifier = Modifier.fillMaxWidth(),
-        trailingIcon = {
-            if (allowClear && date != null) {
-                TextButton(onClick = onClear) {
-                    Text("Clear")
-                }
-            }
-        }
-    )
-
-    LaunchedEffect(interactionSource) {
-        interactionSource.interactions.collect {
-            if (it is PressInteraction.Release) {
-                showPicker = true
-            }
-        }
-    }
-
-    if (showPicker) {
-        DatePickerDialog(
-            onDismissRequest = { showPicker = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        pickerState.selectedDateMillis?.let { millis ->
-                            onDateSelected(
-                                LocalDate.ofEpochDay(millis / 86_400_000)
-                            )
-                        }
-                        showPicker = false
-                    }
-                ) {
-                    Text("OK")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPicker = false }) {
-                    Text("Cancel")
-                }
-            }
-        ) {
-            DatePicker(state = pickerState)
-        }
-    }
-}
-
 @Composable
 private fun RecurringTransactionTypeSelector(
     selected: TransactionType,
@@ -573,14 +503,7 @@ private fun RecurringTransactionTypeSelector(
 
             val isSelected = type == selected
 
-            val typeColor = when (type) {
-                TransactionType.EXPENSE -> NothingRed
-                TransactionType.INCOME -> SuccessGreen
-                TransactionType.TRANSFER ->
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                TransactionType.INVESTMENT ->
-                    Color(0xFFFFB300)
-            }
+            val typeColor = TLTypeColor(type)
 
             Box(
                 modifier = Modifier
@@ -625,14 +548,7 @@ private fun AmountInput(
 
     val currency by CurrencyManager.currency.collectAsState()
 
-    val typeColor = when (transactionType) {
-        TransactionType.EXPENSE -> NothingRed
-        TransactionType.INCOME -> SuccessGreen
-        TransactionType.TRANSFER ->
-            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-        TransactionType.INVESTMENT ->
-            Color(0xFFFFB300)
-    }
+    val typeColor = TLTypeColor(transactionType)
 
     var textFieldValue by remember(rawValue) {
         mutableStateOf(

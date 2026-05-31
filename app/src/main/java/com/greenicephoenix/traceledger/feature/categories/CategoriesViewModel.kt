@@ -44,7 +44,14 @@ class CategoriesViewModel(
     }
 
     fun updateCategory(category: CategoryUiModel) {
-        viewModelScope.launch { repository.upsert(category.toEntity()) }
+        viewModelScope.launch {
+            repository.update(
+                id    = category.id,
+                name  = category.name,
+                color = category.color,
+                icon  = category.icon
+            )
+        }
     }
 
     fun deleteCategory(categoryId: String) {

@@ -9,5 +9,6 @@ data class AccountUiModel(
     val type: AccountType,
     val includeInTotal: Boolean,
     val details: String? = null,
-    val color: Long
+    val color: Long,
+    val lastFourDigits: String? = null   // ← new
 )

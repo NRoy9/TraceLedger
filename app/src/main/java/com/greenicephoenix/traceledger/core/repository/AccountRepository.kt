@@ -43,7 +43,8 @@ class AccountRepository(private val accountDao: AccountDao) {
         type           = AccountType.valueOf(type),
         includeInTotal = includeInTotal,
         details        = details,
-        color          = color
+        color          = color,
+        lastFourDigits = lastFourDigits   // ← new
     )
 
     private fun AccountUiModel.toEntity() = AccountEntity(
@@ -53,6 +54,7 @@ class AccountRepository(private val accountDao: AccountDao) {
         type           = type.name,
         includeInTotal = includeInTotal,
         details        = details,
-        color          = color
+        color          = color,
+        lastFourDigits = lastFourDigits   // ← new
     )
 }

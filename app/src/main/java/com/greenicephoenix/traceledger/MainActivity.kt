@@ -47,8 +47,13 @@ import java.io.File
 
 class MainActivity : ComponentActivity() {
 
-    // Holds the pending download ID so we can match it in the download-complete receiver
-    private var pendingDownloadId: Long = -1L
+    // AFTER — backed by SharedPreferences, survives recreation
+    private val prefs by lazy {
+        getSharedPreferences("update_prefs", MODE_PRIVATE)
+    }
+    private var pendingDownloadId: Long
+        get() = prefs.getLong("pending_download_id", -1L)
+        set(value) { prefs.edit().putLong("pending_download_id", value).apply() }
 
     // BroadcastReceiver that fires when DownloadManager finishes downloading the APK
     private val downloadCompleteReceiver = object : BroadcastReceiver() {

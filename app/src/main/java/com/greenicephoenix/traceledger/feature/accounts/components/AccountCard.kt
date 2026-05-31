@@ -60,7 +60,12 @@ fun AccountCard(
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = account.type.name.replace("_", " "),
+                    text  = buildString {
+                        append(account.type.name.replace("_", " "))
+                        if (!account.lastFourDigits.isNullOrBlank()) {
+                            append("  ••••${account.lastFourDigits}")
+                        }
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

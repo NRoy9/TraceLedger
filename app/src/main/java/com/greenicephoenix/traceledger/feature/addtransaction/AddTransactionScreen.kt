@@ -776,7 +776,12 @@ fun AccountSelector(
 
 
     OutlinedTextField(
-        value = selectedAccount?.name ?: "",
+        value = selectedAccount?.let { account ->
+            buildString {
+                append(account.name)
+                if (!account.lastFourDigits.isNullOrBlank()) append(" ${account.lastFourDigits}")
+            }
+        } ?: "",
         onValueChange = {},
         label = { Text(label) },
         readOnly = true,
@@ -844,7 +849,10 @@ fun AccountSelector(
                         )
                         Spacer(Modifier.width(14.dp))
                         Text(
-                            text = account.name,
+                            text  = buildString {
+                                append(account.name)
+                                if (!account.lastFourDigits.isNullOrBlank()) append(" ${account.lastFourDigits}")
+                            },
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
